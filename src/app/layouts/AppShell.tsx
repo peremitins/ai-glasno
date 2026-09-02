@@ -1,11 +1,15 @@
 import { NavLink, Outlet } from "react-router";
 
+import { useAppSelector } from "@/app/hooks";
+
 const getNavigationClassName = ({ isActive }: { isActive: boolean }) =>
   isActive
     ? "font-semibold text-foreground"
     : "text-muted-foreground hover:text-foreground";
 
 export function AppShell() {
+  const user = useAppSelector((state) => state.auth.user);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background">
@@ -20,8 +24,11 @@ export function AppShell() {
             <NavLink className={getNavigationClassName} to="/" end>
               Главная
             </NavLink>
-            <NavLink className={getNavigationClassName} to="/auth">
-              Войти
+            <NavLink
+              className={getNavigationClassName}
+              to={user ? "/profile" : "/auth"}
+            >
+              {user ? "Профиль" : "Войти"}
             </NavLink>
           </div>
         </nav>
