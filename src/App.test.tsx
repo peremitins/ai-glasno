@@ -3,16 +3,21 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import AppRouter from "./app/AppRouter";
+import { AppProviders } from "./app/providers/AppProviders";
 
 describe("App", () => {
-  it("отображает главную страницу с основной навигацией", () => {
+  it("отображает главную страницу с основной навигацией", async () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <AppRouter />
-      </MemoryRouter>,
+      <AppProviders>
+        <MemoryRouter initialEntries={["/"]}>
+          <AppRouter />
+        </MemoryRouter>
+      </AppProviders>,
     );
 
-    expect(screen.getByRole("heading", { name: "Гласно" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Гласно" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Главная" })).toHaveAttribute(
       "href",
       "/",
@@ -25,9 +30,11 @@ describe("App", () => {
 
   it("показывает страницу 404 для неизвестного маршрута", () => {
     render(
-      <MemoryRouter initialEntries={["/unknown-route"]}>
-        <AppRouter />
-      </MemoryRouter>,
+      <AppProviders>
+        <MemoryRouter initialEntries={["/unknown-route"]}>
+          <AppRouter />
+        </MemoryRouter>
+      </AppProviders>,
     );
 
     expect(
