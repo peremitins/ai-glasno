@@ -28,7 +28,7 @@ export function resetMockData() {
 export const handlers = [
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
   http.post(`${API_BASE_URL}/auth/email/start`, () =>
-    HttpResponse.json({ ok: true }),
+    HttpResponse.json({ ok: true, devCode: "123456" }),
   ),
   http.post(`${API_BASE_URL}/auth/email/verify`, async ({ request }) => {
     const body = (await request.json()) as { code?: string; email?: string };

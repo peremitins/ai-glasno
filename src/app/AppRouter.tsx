@@ -10,9 +10,9 @@ import { ProfilePage } from "@/pages/ProfilePage";
 function AppRouter() {
   return (
     <Routes>
+      <Route path="auth" element={<AuthPage />} />
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
-        <Route path="auth" element={<AuthPage />} />
         <Route
           path="profile"
           element={

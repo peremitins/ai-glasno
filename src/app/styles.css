@@ -1,12 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/onest";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-jetbrains);
 }
 
 :root {
@@ -49,6 +50,104 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --font-onest: "Onest Variable", system-ui, sans-serif;
+  --font-manrope: Manrope, var(--font-onest);
+  --font-jetbrains: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --font-ui: var(--font-onest);
+  --font-display: var(--font-manrope);
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-control: 16px;
+  --accent: #7c5cff;
+  --accent-2: #1195f4;
+  --danger: #ff6b7a;
+  --app-bg: #070a18;
+  --surface: rgb(16 20 43 / 58%);
+  --surface-soft: rgb(255 255 255 / 7.5%);
+  --surface-raised: rgb(255 255 255 / 13%);
+  --glass-border: rgb(255 255 255 / 14%);
+  --glass-blur: 22px;
+  --text-primary: #f7f8ff;
+  --text-secondary: rgb(235 238 255 / 74%);
+  --text-muted: rgb(219 224 247 / 55%);
+  --focus-ring: rgb(124 92 255 / 62%);
+  --button-bg: linear-gradient(135deg, #5f7cff 0%, #8a5cff 58%, #b75cff 100%);
+  --button-bg-hover: linear-gradient(
+    135deg,
+    #6d88ff 0%,
+    #976bff 58%,
+    #c472ff 100%
+  );
+  --button-text: #fff;
+  --button-shadow: 0 18px 42px rgb(96 79 255 / 34%);
+  --shadow-panel:
+    0 20px 60px rgb(0 0 0 / 32%), inset 0 1px 0 rgb(255 255 255 / 12%);
+  --ambient-primary: radial-gradient(
+    circle,
+    rgb(124 92 255 / 38%),
+    rgb(124 92 255 / 0) 68%
+  );
+  --ambient-secondary: radial-gradient(
+    circle,
+    rgb(72 215 255 / 24%),
+    rgb(72 215 255 / 0) 68%
+  );
+  --ambient-tertiary: radial-gradient(
+    circle,
+    rgb(255 126 205 / 16%),
+    rgb(255 126 205 / 0) 72%
+  );
+  --background: var(--app-bg);
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --primary: var(--accent);
+  --primary-foreground: var(--button-text);
+  --secondary: var(--surface-soft);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-soft);
+  --muted-foreground: var(--text-muted);
+  --border: var(--glass-border);
+  --input: var(--glass-border);
+  --ring: var(--focus-ring);
+}
+
+html[data-theme="light"] {
+  --app-bg: #f4f7ff;
+  --surface: rgb(255 255 255 / 62%);
+  --surface-soft: rgb(255 255 255 / 58%);
+  --surface-raised: rgb(255 255 255 / 82%);
+  --glass-border: rgb(82 93 142 / 16%);
+  --text-primary: #15182a;
+  --text-secondary: rgb(31 35 62 / 74%);
+  --text-muted: rgb(59 65 101 / 58%);
+  --focus-ring: rgb(111 83 244 / 46%);
+  --button-bg: linear-gradient(135deg, #536eff 0%, #795cff 58%, #a85cff 100%);
+  --button-bg-hover: linear-gradient(
+    135deg,
+    #4663f7 0%,
+    #6b4cf0 58%,
+    #9a50ef 100%
+  );
+  --button-shadow: 0 18px 44px rgb(96 79 255 / 26%);
+  --shadow-panel:
+    0 20px 60px rgb(82 91 142 / 16%), inset 0 1px 0 rgb(255 255 255 / 78%);
+  --ambient-primary: radial-gradient(
+    circle,
+    rgb(124 92 255 / 24%),
+    rgb(124 92 255 / 0) 68%
+  );
+  --ambient-secondary: radial-gradient(
+    circle,
+    rgb(72 215 255 / 20%),
+    rgb(72 215 255 / 0) 68%
+  );
+  --ambient-tertiary: radial-gradient(
+    circle,
+    rgb(255 161 205 / 18%),
+    rgb(255 161 205 / 0) 72%
+  );
 }
 
 body {
@@ -66,7 +165,7 @@ select {
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-sans: var(--font-ui);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

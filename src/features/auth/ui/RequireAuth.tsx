@@ -12,7 +12,11 @@ export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation();
 
   if (!user) {
-    return <Navigate replace state={{ from: location }} to="/auth" />;
+    const nextPath = `${location.pathname}${location.search}${location.hash}`;
+
+    return (
+      <Navigate replace to={`/auth?next=${encodeURIComponent(nextPath)}`} />
+    );
   }
 
   return children;

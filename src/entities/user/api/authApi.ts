@@ -4,6 +4,7 @@ import { baseApi, toApiError } from "@/shared/api/baseApi";
 import type { AuthUser } from "../model/types";
 
 type StartEmailLoginResponse = {
+  devCode?: string;
   ok: true;
 };
 
