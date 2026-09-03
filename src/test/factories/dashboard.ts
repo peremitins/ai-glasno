@@ -6,6 +6,7 @@ const defaultDashboard: DashboardOverview = {
   nextSession: {
     topic: "Практика TypeScript",
   },
+  recentSessions: [],
 };
 
 export function createDashboardFixture(
@@ -18,5 +19,6 @@ export function createDashboardFixture(
       ...defaultDashboard.nextSession,
       ...overrides.nextSession,
     },
+    recentSessions: overrides.recentSessions ?? defaultDashboard.recentSessions,
   };
 }
