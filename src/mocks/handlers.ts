@@ -11,7 +11,23 @@ const dashboard: DashboardOverview = {
   nextSession: {
     topic: "Практика TypeScript",
   },
+  recentSessions: [
+    {
+      id: "session_01",
+      title: "Практика TypeScript",
+      status: "active",
+      completedAt: null,
+    },
+    {
+      id: "session_02",
+      title: "Frontend-разработчик",
+      status: "completed",
+      completedAt: "2026-09-01T10:00:00.000Z",
+    },
+  ],
 };
+
+const sessions = [...dashboard.recentSessions];
 
 const initialUser: AuthUser = {
   id: "user_01",
@@ -27,6 +43,7 @@ export function resetMockData() {
 
 export const handlers = [
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
+  http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
   http.post(`${API_BASE_URL}/auth/email/start`, () =>
     HttpResponse.json({ ok: true, devCode: "123456" }),
   ),

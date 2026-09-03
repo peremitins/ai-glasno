@@ -1,6 +1,7 @@
 import { Provider } from "react-redux";
 import { render, screen } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { createAppStore } from "@/app/store";
@@ -15,7 +16,9 @@ function renderHomePage() {
 
   return render(
     <Provider store={store}>
-      <HomePage />
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
     </Provider>,
   );
 }
@@ -53,6 +56,44 @@ describe("HomePage", () => {
       await screen.findByRole("heading", { name: "Производительность React" }),
     ).toBeInTheDocument();
     expect(screen.getByText("14 завершённых сессий")).toBeInTheDocument();
+  });
+
+  it("показывает сводку, последние сессии и быстрый старт", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/dashboard`, () =>
+        HttpResponse.json(
+          createDashboardFixture({
+            activeSessions: 1,
+            completedSessions: 4,
+            recentSessions: [
+              {
+                id: "session_01",
+                title: "Frontend-разработчик",
+                status: "completed",
+                completedAt: "2026-09-01T10:00:00.000Z",
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+
+    renderHomePage();
+
+    expect(
+      await screen.findByRole("heading", { name: "Гласно" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 активная сессия")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Последние сессии" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Начать сессию" })).toHaveAttribute(
+      "href",
+      "/interview/new",
+    );
+    expect(screen.getByRole("link", { name: "История сессий" })).toHaveAttribute(
+      "href",
+      "/history",
+    );
+    expect(screen.getByText("Frontend-разработчик")).toBeInTheDocument();
   });
 
   it("показывает прикладную ошибку при недоступности дашборда", async () => {

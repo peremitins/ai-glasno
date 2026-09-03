@@ -24,6 +24,9 @@ export function AppShell() {
             <NavLink className={getNavigationClassName} to="/" end>
               Главная
             </NavLink>
+            <NavLink className={getNavigationClassName} to="/history">
+              История
+            </NavLink>
             <NavLink
               className={getNavigationClassName}
               to={user ? "/profile" : "/auth"}
