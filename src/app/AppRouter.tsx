@@ -5,6 +5,8 @@ import { RequireAuth } from "@/features/auth/ui/RequireAuth";
 import { AuthPage } from "@/pages/AuthPage";
 import { HomePage } from "@/pages/HomePage";
 import { HistoryPage } from "@/pages/HistoryPage";
+import { InterviewPage } from "@/pages/InterviewPage";
+import { NewInterviewPage } from "@/pages/NewInterviewPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 
@@ -15,6 +17,8 @@ function AppRouter() {
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="history" element={<HistoryPage />} />
+        <Route path="interview/new" element={<NewInterviewPage />} />
+        <Route path="interview/:id" element={<InterviewPage />} />
         <Route
           path="profile"
           element={

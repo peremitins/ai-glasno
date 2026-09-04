@@ -1,6 +1,11 @@
 import { baseApi, toApiError } from "@/shared/api/baseApi";
 
-import { interviewSessionsSchema, type InterviewSession } from "../model/types";
+import {
+  interviewSessionSchema,
+  interviewSessionsSchema,
+  type InterviewSession,
+  type SessionDraft,
+} from "../model/types";
 
 export const sessionApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -10,7 +15,17 @@ export const sessionApi = baseApi.injectEndpoints({
       transformErrorResponse: toApiError,
       providesTags: ["Session"],
     }),
+    createSession: builder.mutation<InterviewSession, SessionDraft>({
+      query: (draft) => ({
+        url: "sessions",
+        method: "POST",
+        body: draft,
+      }),
+      transformResponse: (response: unknown) => interviewSessionSchema.parse(response),
+      transformErrorResponse: toApiError,
+      invalidatesTags: ["Session", "Dashboard"],
+    }),
   }),
 });
 
-export const { useGetSessionsQuery } = sessionApi;
+export const { useCreateSessionMutation, useGetSessionsQuery } = sessionApi;

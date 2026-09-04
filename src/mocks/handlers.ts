@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 import { API_BASE_URL } from "@/shared/api/baseApi";
 
 import type { DashboardOverview } from "@/entities/dashboard/model/types";
+import type { SessionDraft } from "@/entities/session/model/types";
 import type { AuthUser } from "@/entities/user/model/types";
 
 const dashboard: DashboardOverview = {
@@ -27,7 +28,8 @@ const dashboard: DashboardOverview = {
   ],
 };
 
-const sessions = [...dashboard.recentSessions];
+const initialSessions = [...dashboard.recentSessions];
+let sessions = [...initialSessions];
 
 const initialUser: AuthUser = {
   id: "user_01",
@@ -39,11 +41,32 @@ let user = initialUser;
 
 export function resetMockData() {
   user = initialUser;
+  sessions = [...initialSessions];
 }
 
 export const handlers = [
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
   http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
+  http.post(`${API_BASE_URL}/sessions`, async ({ request }) => {
+    const body = (await request.json()) as Partial<SessionDraft>;
+
+    if (!body.vacancy?.trim()) {
+      return HttpResponse.json(
+        { code: "invalid_session", message: "Укажите вакансию." },
+        { status: 400 },
+      );
+    }
+
+    const session = {
+      id: "session_03",
+      title: body.vacancy.trim(),
+      status: "active" as const,
+      completedAt: null,
+    };
+    sessions = [session, ...sessions];
+
+    return HttpResponse.json(session, { status: 201 });
+  }),
   http.post(`${API_BASE_URL}/auth/email/start`, () =>
     HttpResponse.json({ ok: true, devCode: "123456" }),
   ),
