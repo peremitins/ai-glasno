@@ -1,7 +1,7 @@
 import { Provider } from "react-redux";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { MemoryRouter, useLocation } from "react-router";
 import { describe, expect, it } from "vitest";
 
@@ -29,6 +29,20 @@ function renderHistoryPage(entry = "/history") {
 }
 
 describe("HistoryPage", () => {
+  it("показывает загрузку истории", () => {
+    server.use(
+      http.get(`${API_BASE_URL}/sessions`, async () => {
+        await delay("infinite");
+
+        return HttpResponse.json([]);
+      }),
+    );
+
+    renderHistoryPage();
+
+    expect(screen.getByText("Загрузка истории сессий…")).toBeInTheDocument();
+  });
+
   it("меняет URL при выборе фильтра статуса", async () => {
     const user = userEvent.setup();
     renderHistoryPage();
@@ -41,6 +55,32 @@ describe("HistoryPage", () => {
     expect(screen.getByTestId("location")).toHaveTextContent(
       "?status=completed",
     );
+  });
+
+  it("показывает только завершённые сессии для фильтра completed", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/sessions`, () =>
+        HttpResponse.json([
+          {
+            id: "session_01",
+            title: "Практика TypeScript",
+            status: "completed",
+            completedAt: "2026-09-01T10:00:00.000Z",
+          },
+          {
+            id: "session_02",
+            title: "Практика React",
+            status: "active",
+            completedAt: null,
+          },
+        ]),
+      ),
+    );
+
+    renderHistoryPage("/history?status=completed");
+
+    expect(await screen.findByText("Практика TypeScript")).toBeInTheDocument();
+    expect(screen.queryByText("Практика React")).not.toBeInTheDocument();
   });
 
   it("показывает пустое состояние для фильтра без сессий", async () => {

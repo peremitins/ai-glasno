@@ -2,9 +2,11 @@ import { Link, useSearchParams } from "react-router";
 
 import { useGetSessionsQuery } from "@/entities/session/api/sessionApi";
 import {
-  selectSessionsByStatus,
+  getSessionStatusFilter,
+  setSessionStatusFilter,
   type SessionStatusFilter,
-} from "@/entities/session/model/selectors";
+} from "@/entities/session/model/historyFilters";
+import { selectSessionsByStatus } from "@/entities/session/model/selectors";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
 
 const filters: Array<{ value: SessionStatusFilter; label: string }> = [
@@ -12,10 +14,6 @@ const filters: Array<{ value: SessionStatusFilter; label: string }> = [
   { value: "active", label: "Активные" },
   { value: "completed", label: "Завершённые" },
 ];
-
-function getStatusFilter(value: string | null): SessionStatusFilter {
-  return value === "active" || value === "completed" ? value : "all";
-}
 
 function getEmptyMessage(status: SessionStatusFilter) {
   if (status === "active") return "Активных сессий пока нет.";
@@ -25,14 +23,14 @@ function getEmptyMessage(status: SessionStatusFilter) {
 
 export function HistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const status = getStatusFilter(searchParams.get("status"));
+  const status = getSessionStatusFilter(searchParams.get("status"));
   const { data = [], error, isError, isLoading } = useGetSessionsQuery();
   const sessions = selectSessionsByStatus(data, status);
 
   function handleFilterChange(value: string) {
-    const nextStatus = getStatusFilter(value);
+    const nextStatus = getSessionStatusFilter(value);
 
-    setSearchParams(nextStatus === "all" ? {} : { status: nextStatus });
+    setSearchParams(setSessionStatusFilter(searchParams, nextStatus));
   }
 
   if (isLoading) {

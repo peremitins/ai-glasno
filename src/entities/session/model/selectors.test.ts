@@ -28,4 +28,8 @@ describe("selectSessionsByStatus", () => {
       sessions[0],
     ]);
   });
+
+  it("оставляет активные сессии для фильтра active", () => {
+    expect(selectSessionsByStatus(sessions, "active")).toEqual([sessions[1]]);
+  });
 });
