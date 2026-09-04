@@ -1,12 +1,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import { authReducer } from "@/features/auth/model/authSlice";
+import { interviewReducer } from "@/features/interview/model/interviewSlice";
 import { baseApi } from "@/shared/api/baseApi";
 
 export function createAppStore() {
   return configureStore({
     reducer: {
       auth: authReducer,
+      interview: interviewReducer,
       [baseApi.reducerPath]: baseApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
