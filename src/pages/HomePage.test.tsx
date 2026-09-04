@@ -35,7 +35,10 @@ describe("HomePage", () => {
 
     renderHomePage();
 
-    expect(screen.getByRole("status")).toHaveTextContent("Загрузка дашборда");
+    expect(screen.getByRole("status", { name: "Загрузка дашборда" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
   });
 
   it("отображает данные дашборда, полученные через API", async () => {
@@ -44,7 +47,6 @@ describe("HomePage", () => {
         HttpResponse.json(
           createDashboardFixture({
             completedSessions: 14,
-            nextSession: { topic: "Производительность React" },
           }),
         ),
       ),
@@ -53,9 +55,9 @@ describe("HomePage", () => {
     renderHomePage();
 
     expect(
-      await screen.findByRole("heading", { name: "Производительность React" }),
+      await screen.findByRole("heading", { name: "Продолжить подготовку" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("14 завершённых сессий")).toBeInTheDocument();
+    expect(screen.getByText("Завершено").nextElementSibling).toHaveTextContent("14");
   });
 
   it("показывает сводку, последние сессии и быстрый старт", async () => {
@@ -81,15 +83,15 @@ describe("HomePage", () => {
     renderHomePage();
 
     expect(
-      await screen.findByRole("heading", { name: "Гласно" }),
+      await screen.findByRole("heading", { name: "Продолжить подготовку" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 активная сессия")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Последние сессии" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Начать сессию" })).toHaveAttribute(
+    expect(screen.getByText("Сессии").nextElementSibling).toHaveTextContent("5");
+    expect(screen.getByRole("heading", { name: "Последние интервью" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Настроить подробнее" })).toHaveAttribute(
       "href",
       "/interview/new",
     );
-    expect(screen.getByRole("link", { name: "История сессий" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "История" })).toHaveAttribute(
       "href",
       "/history",
     );

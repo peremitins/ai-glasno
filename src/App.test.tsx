@@ -16,7 +16,7 @@ describe("App", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Гласно" }),
+      await screen.findByRole("heading", { name: "Продолжить подготовку" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Главная" })).toHaveAttribute(
       "href",
