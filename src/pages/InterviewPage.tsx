@@ -1,9 +1,245 @@
+import { Lightbulb, Send, Timer, X } from "lucide-react";
+import { useState } from "react";
+import { useParams } from "react-router";
+
+import { useAppDispatch, useAppSelector } from "@/app/hooks";
+import {
+  useCompleteSessionMutation,
+  useGetInterviewWorkspaceQuery,
+  useNextQuestionMutation,
+  useSaveAnswerMutation,
+} from "@/entities/session/api/sessionApi";
+import {
+  clearAnswerDraft,
+  closeHints,
+  setAnswerDraft,
+  toggleHints,
+} from "@/features/interview/model/interviewSlice";
+import { getApiErrorMessage } from "@/shared/api/baseApi";
+
+import "./InterviewPage.css";
+
 export function InterviewPage() {
+  const { id = "" } = useParams();
+  const dispatch = useAppDispatch();
+  const answerDraft = useAppSelector((state) => state.interview.answerDraft);
+  const hintsOpen = useAppSelector((state) => state.interview.hintsOpen);
+  const { data, error, isLoading } = useGetInterviewWorkspaceQuery(id, {
+    skip: !id,
+  });
+  const [saveAnswer, saveAnswerState] = useSaveAnswerMutation();
+  const [nextQuestion, nextQuestionState] = useNextQuestionMutation();
+  const [completeSession, completeSessionState] = useCompleteSessionMutation();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  if (isLoading) return <SessionLoading />;
+
+  if (error || !data) {
+    return (
+      <section className="session-state glass-frame">
+        <p className="session-eyebrow">Интервью</p>
+        <h1>Сессия не найдена</h1>
+        <p>Проверьте ссылку или выберите другую сессию в истории.</p>
+      </section>
+    );
+  }
+
+  const { currentTurn, session, totalQuestions } = data;
+  const isCompleted = session.status === "completed" || !currentTurn;
+  const isBusy =
+    saveAnswerState.isLoading ||
+    nextQuestionState.isLoading ||
+    completeSessionState.isLoading;
+
+  async function handleSaveAnswer() {
+    if (!currentTurn || answerDraft.trim().length < 2) {
+      setActionError("Ответ должен содержать минимум 2 символа.");
+      return;
+    }
+    setActionError(null);
+    setNotice(null);
+    try {
+      await saveAnswer({
+        answer: answerDraft,
+        turnId: currentTurn.id,
+      }).unwrap();
+      dispatch(clearAnswerDraft());
+      setNotice("Ответ сохранён");
+    } catch (requestError) {
+      setActionError(getApiErrorMessage(requestError));
+    }
+  }
+
+  async function handleNextQuestion() {
+    if (!currentTurn) return;
+    setActionError(null);
+    setNotice(null);
+    dispatch(closeHints());
+    try {
+      await nextQuestion({ turnId: currentTurn.id }).unwrap();
+    } catch (requestError) {
+      setActionError(getApiErrorMessage(requestError));
+    }
+  }
+
+  async function handleComplete() {
+    setActionError(null);
+    setNotice(null);
+    try {
+      await completeSession(id).unwrap();
+      dispatch(closeHints());
+    } catch (requestError) {
+      setActionError(getApiErrorMessage(requestError));
+    }
+  }
+
+  if (isCompleted) {
+    return (
+      <section className="session-state glass-frame">
+        <p className="session-eyebrow">Интервью завершено</p>
+        <h1>Сессия завершена</h1>
+        <p>
+          Ответы сохранены. Результаты появятся в истории сессий после
+          обработки.
+        </p>
+      </section>
+    );
+  }
+
+  const progress = Math.round((currentTurn.index / totalQuestions) * 100);
   return (
-    <section className="max-w-2xl space-y-3">
-      <p className="text-sm font-medium text-muted-foreground">Интервью</p>
-      <h1 className="text-4xl font-semibold tracking-tight">Сессия</h1>
-      <p className="text-muted-foreground">Сессия готова к началу.</p>
+    <section className="interview-workspace">
+      <header className="session-header glass-frame glass-frame--soft">
+        <div>
+          <p className="session-eyebrow">
+            Вопрос {currentTurn.index} из {totalQuestions}
+          </p>
+          <h1>{session.title}</h1>
+        </div>
+        <div className="session-timer" aria-label="Текстовый режим">
+          <Timer aria-hidden="true" />
+          <span>Текстовый режим</span>
+        </div>
+      </header>
+      <div className="session-progress" aria-label={`Прогресс ${progress}%`}>
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="interview-grid">
+        <main className="question-panel glass-frame">
+          <p className="session-eyebrow">Текущий вопрос</p>
+          <h2>{currentTurn.question}</h2>
+          <div className="interview-dialogue" aria-live="polite">
+            {currentTurn.messages.map((message) => (
+              <article
+                className={`dialogue-message dialogue-message--${message.role}`}
+                key={message.id}
+              >
+                <span>
+                  {message.role === "interviewer" ? "Интервьюер" : "Вы"}
+                </span>
+                <p>{message.content}</p>
+              </article>
+            ))}
+          </div>
+          <label className="answer-composer" htmlFor="interview-answer">
+            <span>Ваш ответ</span>
+            <textarea
+              disabled={isBusy}
+              id="interview-answer"
+              onChange={(event) => dispatch(setAnswerDraft(event.target.value))}
+              placeholder="Сформулируйте ответ и приведите пример из практики"
+              rows={5}
+              value={answerDraft}
+            />
+          </label>
+          {actionError && (
+            <p className="session-error" role="alert">
+              {actionError}
+            </p>
+          )}
+          {notice && (
+            <p className="session-notice" role="status">
+              {notice}
+            </p>
+          )}
+          <div className="session-actions">
+            <button
+              className="session-button session-button--secondary"
+              disabled={isBusy}
+              onClick={() => dispatch(toggleHints())}
+              type="button"
+            >
+              <Lightbulb aria-hidden="true" />
+              {hintsOpen ? "Скрыть подсказки" : "Показать подсказки"}
+            </button>
+            <button
+              className="session-button session-button--primary"
+              disabled={isBusy || answerDraft.trim().length < 2}
+              onClick={handleSaveAnswer}
+              type="button"
+            >
+              <Send aria-hidden="true" />
+              Отправить ответ
+            </button>
+          </div>
+        </main>
+        <aside className="session-side-panel">
+          {hintsOpen && (
+            <section
+              className="hint-card glass-frame"
+              aria-label="Подсказки к вопросу"
+            >
+              <div className="hint-card-header">
+                <div>
+                  <p className="session-eyebrow">Подсказка</p>
+                  <h2>На что обратить внимание</h2>
+                </div>
+                <button
+                  aria-label="Скрыть подсказки"
+                  onClick={() => dispatch(closeHints())}
+                  type="button"
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+              <p>
+                {currentTurn.hint ??
+                  "Сформулируйте ответ последовательно и подкрепите его примером."}
+              </p>
+            </section>
+          )}
+          <section className="session-controls glass-frame glass-frame--soft">
+            <p className="session-eyebrow">Управление сессией</p>
+            <button
+              className="session-button session-button--primary"
+              disabled={isBusy}
+              onClick={handleNextQuestion}
+              type="button"
+            >
+              Следующий вопрос
+            </button>
+            <button
+              className="session-button session-button--danger"
+              disabled={isBusy}
+              onClick={handleComplete}
+              type="button"
+            >
+              Завершить сессию
+            </button>
+          </section>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function SessionLoading() {
+  return (
+    <section className="session-loading" aria-label="Загрузка сессии">
+      <div className="session-loading-line" />
+      <div className="session-loading-card" />
+      <div className="session-loading-card session-loading-card--short" />
     </section>
   );
 }

@@ -15,15 +15,42 @@ export const interviewSessionsSchema = z.array(interviewSessionSchema);
 
 export type InterviewSession = z.infer<typeof interviewSessionSchema>;
 
-export const interviewFormatSchema = z.enum(["technical", "behavioral", "mixed"]);
+export const interviewMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["candidate", "interviewer"]),
+  content: z.string(),
+  createdAt: z.string(),
+});
+
+export const interviewTurnSchema = z.object({
+  id: z.string(),
+  index: z.number().int().positive(),
+  question: z.string(),
+  hint: z.string().nullable(),
+  answer: z.string().nullable(),
+  messages: z.array(interviewMessageSchema),
+});
+
+export const interviewWorkspaceSchema = z.object({
+  session: interviewSessionSchema,
+  currentTurn: interviewTurnSchema.nullable(),
+  totalQuestions: z.number().int().positive(),
+});
+
+export type InterviewWorkspace = z.infer<typeof interviewWorkspaceSchema>;
+export type SaveAnswerRequest = { answer: string; turnId: string };
+export type NextQuestionRequest = { turnId: string };
+
+export const interviewFormatSchema = z.enum([
+  "technical",
+  "behavioral",
+  "mixed",
+]);
 export const interviewLevelSchema = z.enum(["junior", "middle", "senior"]);
 
 export const sessionDraftSchema = z.object({
   vacancy: z.string().trim().min(10, "Опишите вакансию не короче 10 символов"),
-  profile: z
-    .string()
-    .trim()
-    .min(20, "Опишите профиль не короче 20 символов"),
+  profile: z.string().trim().min(20, "Опишите профиль не короче 20 символов"),
   format: interviewFormatSchema,
   level: interviewLevelSchema,
   questionsCount: z

@@ -34,7 +34,9 @@ describe("NewInterviewPage", () => {
     expect(
       await screen.findByText("Опишите вакансию не короче 10 символов"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Вакансия" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Вакансия" }),
+    ).toBeInTheDocument();
   });
 
   it("создаёт сессию после заполнения всех шагов и открывает её", async () => {
@@ -57,11 +59,21 @@ describe("NewInterviewPage", () => {
     await user.selectOptions(screen.getByLabelText("Формат"), "technical");
     await user.click(screen.getByRole("button", { name: "Далее" }));
 
-    await user.selectOptions(screen.getByLabelText("Количество вопросов"), "10");
-    await user.selectOptions(screen.getByLabelText("Длительность, минут"), "45");
+    await user.selectOptions(
+      screen.getByLabelText("Количество вопросов"),
+      "10",
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Длительность, минут"),
+      "45",
+    );
     await user.click(screen.getByRole("button", { name: "Создать сессию" }));
 
-    expect(await screen.findByRole("heading", { name: "Сессия" })).toBeInTheDocument();
-    expect(screen.getByTestId("location")).toHaveTextContent("/interview/session_03");
+    expect(
+      await screen.findByRole("heading", { name: "Senior Frontend Developer" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/interview/session_03",
+    );
   });
 });
