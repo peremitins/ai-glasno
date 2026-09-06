@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { config as loadEnvFile } from "dotenv";
 
 const environmentSchema = z.object({
   NUXT_DATABASE_URL: z.string().min(1, "NUXT_DATABASE_URL обязателен"),
@@ -24,6 +25,18 @@ export type RuntimeConfig = {
   };
 };
 
+let environmentLoaded = false;
+
+function loadLocalEnvironment() {
+  if (environmentLoaded) return;
+
+  const mode =
+    process.env.NODE_ENV === "production" ? "production" : "development";
+  loadEnvFile({ path: `.env.${mode}`, quiet: true });
+  loadEnvFile({ path: ".env", quiet: true });
+  environmentLoaded = true;
+}
+
 export function readRuntimeConfig(
   environment: Record<string, string | undefined>,
 ): RuntimeConfig {
@@ -43,4 +56,9 @@ export function readRuntimeConfig(
       apiBase: value.NUXT_PUBLIC_API_BASE,
     },
   };
+}
+
+export function getRuntimeConfig() {
+  loadLocalEnvironment();
+  return readRuntimeConfig(process.env);
 }

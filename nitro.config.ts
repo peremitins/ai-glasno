@@ -5,7 +5,7 @@ export default defineNitroConfig({
   serverDir: "server",
   devServer: {
     host: "127.0.0.1",
-    port: 3000,
+    port: Number(process.env.NITRO_PORT ?? 3000),
   },
   dotenv: {
     fileName: [".env", ".env.local", ".env.development"],
