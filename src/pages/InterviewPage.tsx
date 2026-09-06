@@ -4,11 +4,12 @@ import { useParams } from "react-router";
 
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import {
+  sessionApi,
   useCompleteSessionMutation,
   useGetInterviewWorkspaceQuery,
   useNextQuestionMutation,
-  useSaveAnswerMutation,
 } from "@/entities/session/api/sessionApi";
+import { streamInterviewReply } from "@/entities/session/api/interviewTransport";
 import {
   clearAnswerDraft,
   closeHints,
@@ -27,11 +28,13 @@ export function InterviewPage() {
   const { data, error, isLoading } = useGetInterviewWorkspaceQuery(id, {
     skip: !id,
   });
-  const [saveAnswer, saveAnswerState] = useSaveAnswerMutation();
   const [nextQuestion, nextQuestionState] = useNextQuestionMutation();
   const [completeSession, completeSessionState] = useCompleteSessionMutation();
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [streamingReply, setStreamingReply] = useState("");
+  const [pendingCandidateMessage, setPendingCandidateMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   if (isLoading) return <SessionLoading />;
 
@@ -48,26 +51,47 @@ export function InterviewPage() {
   const { currentTurn, session, totalQuestions } = data;
   const isCompleted = session.status === "completed" || !currentTurn;
   const isBusy =
-    saveAnswerState.isLoading ||
     nextQuestionState.isLoading ||
-    completeSessionState.isLoading;
+    completeSessionState.isLoading ||
+    isStreaming;
 
-  async function handleSaveAnswer() {
-    if (!currentTurn || answerDraft.trim().length < 2) {
-      setActionError("Ответ должен содержать минимум 2 символа.");
+  async function handleSendMessage() {
+    const message = answerDraft.trim();
+    if (!currentTurn || !message) {
+      setActionError("Введите ответ перед отправкой.");
       return;
     }
     setActionError(null);
     setNotice(null);
+    setStreamingReply("");
+    setPendingCandidateMessage(message);
+    dispatch(clearAnswerDraft());
+    setIsStreaming(true);
     try {
-      await saveAnswer({
-        answer: answerDraft,
-        turnId: currentTurn.id,
-      }).unwrap();
-      dispatch(clearAnswerDraft());
-      setNotice("Ответ сохранён");
+      const workspace = await streamInterviewReply(
+        {
+          sessionId: id,
+          turnId: currentTurn.id,
+          message,
+        },
+        { onDelta: (delta) => setStreamingReply((text) => text + delta) },
+      );
+      dispatch(
+        sessionApi.util.updateQueryData(
+          "getInterviewWorkspace",
+          id,
+          () => workspace,
+        ),
+      );
+      setPendingCandidateMessage("");
+      setStreamingReply("");
     } catch (requestError) {
+      dispatch(setAnswerDraft(message));
+      setPendingCandidateMessage("");
+      setStreamingReply("");
       setActionError(getApiErrorMessage(requestError));
+    } finally {
+      setIsStreaming(false);
     }
   }
 
@@ -77,7 +101,7 @@ export function InterviewPage() {
     setNotice(null);
     dispatch(closeHints());
     try {
-      await nextQuestion({ turnId: currentTurn.id }).unwrap();
+      await nextQuestion({ sessionId: id, turnId: currentTurn.id }).unwrap();
     } catch (requestError) {
       setActionError(getApiErrorMessage(requestError));
     }
@@ -141,6 +165,21 @@ export function InterviewPage() {
                 <p>{message.content}</p>
               </article>
             ))}
+            {pendingCandidateMessage && (
+              <article className="dialogue-message dialogue-message--candidate">
+                <span>Вы</span>
+                <p>{pendingCandidateMessage}</p>
+              </article>
+            )}
+            {streamingReply && (
+              <article
+                className="dialogue-message dialogue-message--interviewer"
+                data-testid="streaming-reply"
+              >
+                <span>Интервьюер</span>
+                <p>{streamingReply}</p>
+              </article>
+            )}
           </div>
           <label className="answer-composer" htmlFor="interview-answer">
             <span>Ваш ответ</span>
@@ -176,7 +215,7 @@ export function InterviewPage() {
             <button
               className="session-button session-button--primary"
               disabled={isBusy || answerDraft.trim().length < 2}
-              onClick={handleSaveAnswer}
+              onClick={handleSendMessage}
               type="button"
             >
               <Send aria-hidden="true" />

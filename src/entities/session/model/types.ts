@@ -38,8 +38,12 @@ export const interviewWorkspaceSchema = z.object({
 });
 
 export type InterviewWorkspace = z.infer<typeof interviewWorkspaceSchema>;
-export type SaveAnswerRequest = { answer: string; turnId: string };
-export type NextQuestionRequest = { turnId: string };
+export type SaveAnswerRequest = {
+  answer: string;
+  sessionId: string;
+  turnId: string;
+};
+export type NextQuestionRequest = { sessionId: string; turnId: string };
 
 export const interviewFormatSchema = z.enum([
   "technical",

@@ -1,9 +1,10 @@
 import { baseApi, toApiError } from "@/shared/api/baseApi";
 
+import { normalizeInterviewWorkspace } from "./interviewTransport";
+
 import {
   interviewSessionSchema,
   interviewSessionsSchema,
-  interviewWorkspaceSchema,
   type InterviewSession,
   type InterviewWorkspace,
   type NextQuestionRequest,
@@ -33,41 +34,38 @@ export const sessionApi = baseApi.injectEndpoints({
     }),
     getInterviewWorkspace: builder.query<InterviewWorkspace, string>({
       query: (sessionId) => `sessions/${sessionId}`,
-      transformResponse: (response: unknown) =>
-        interviewWorkspaceSchema.parse(response),
+      transformResponse: normalizeInterviewWorkspace,
       transformErrorResponse: toApiError,
       providesTags: (_result, _error, sessionId) => [
         { type: "Session", id: sessionId },
       ],
     }),
     saveAnswer: builder.mutation<InterviewWorkspace, SaveAnswerRequest>({
-      query: ({ turnId, ...body }) => ({
-        url: `sessions/turns/${turnId}/answer`,
+      query: ({ sessionId, ...body }) => ({
+        url: `sessions/${sessionId}/answer`,
         method: "POST",
         body,
       }),
-      transformResponse: (response: unknown) =>
-        interviewWorkspaceSchema.parse(response),
+      transformResponse: normalizeInterviewWorkspace,
       transformErrorResponse: toApiError,
       invalidatesTags: ["Session"],
     }),
     nextQuestion: builder.mutation<InterviewWorkspace, NextQuestionRequest>({
-      query: ({ turnId }) => ({
-        url: `sessions/turns/${turnId}/next`,
+      query: ({ sessionId, ...body }) => ({
+        url: `sessions/${sessionId}/next`,
         method: "POST",
+        body,
       }),
-      transformResponse: (response: unknown) =>
-        interviewWorkspaceSchema.parse(response),
+      transformResponse: normalizeInterviewWorkspace,
       transformErrorResponse: toApiError,
       invalidatesTags: ["Session"],
     }),
     completeSession: builder.mutation<InterviewWorkspace, string>({
       query: (sessionId) => ({
-        url: `sessions/${sessionId}/complete`,
+        url: `sessions/${sessionId}/finish`,
         method: "POST",
       }),
-      transformResponse: (response: unknown) =>
-        interviewWorkspaceSchema.parse(response),
+      transformResponse: normalizeInterviewWorkspace,
       transformErrorResponse: toApiError,
       invalidatesTags: (_result, _error, sessionId) => [
         { type: "Session", id: sessionId },

@@ -114,11 +114,105 @@ export const handlers = [
     return HttpResponse.json(workspace);
   }),
   http.post(
-    `${API_BASE_URL}/sessions/turns/:turnId/answer`,
+    `${API_BASE_URL}/sessions/:sessionId/reply-stream`,
+    async ({ params, request }) => {
+      const currentTurn = workspace.currentTurn;
+      const body = (await request.json()) as {
+        message?: string;
+        turnId?: string;
+      };
+      const message = body.message?.trim();
+
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        body.turnId !== currentTurn.id
+      ) {
+        return HttpResponse.json(
+          { code: "turn_not_found", message: "Вопрос не найден." },
+          { status: 404 },
+        );
+      }
+
+      if (!message) {
+        return HttpResponse.json(
+          {
+            code: "invalid_message",
+            message: "Введите ответ перед отправкой.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const interviewerReply =
+        "Верно. Приведите пример, где декларативное слияние действительно полезно.";
+      const createdAt = new Date().toISOString();
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          ...currentTurn,
+          answer: message,
+          messages: [
+            ...currentTurn.messages,
+            {
+              id: `message_${currentTurn.messages.length + 1}`,
+              role: "candidate",
+              content: message,
+              createdAt,
+            },
+            {
+              id: `message_${currentTurn.messages.length + 2}`,
+              role: "interviewer",
+              content: interviewerReply,
+              createdAt,
+            },
+          ],
+        },
+      };
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                output_text_delta: "Верно. Приведите пример, ",
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                output_text_delta:
+                  "где декларативное слияние действительно полезно.",
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ done: true, state: workspace })}\n\n`,
+            ),
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new HttpResponse(stream, {
+        headers: { "content-type": "text/event-stream" },
+      });
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/answer`,
     async ({ params, request }) => {
       const currentTurn = workspace.currentTurn;
 
-      if (!currentTurn || params.turnId !== currentTurn.id) {
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        params.turnId !== currentTurn.id
+      ) {
         return HttpResponse.json(
           { code: "turn_not_found", message: "Вопрос не найден." },
           { status: 404 },
@@ -155,36 +249,43 @@ export const handlers = [
       return HttpResponse.json(workspace);
     },
   ),
-  http.post(`${API_BASE_URL}/sessions/turns/:turnId/next`, ({ params }) => {
-    if (params.turnId !== workspace.currentTurn?.id) {
-      return HttpResponse.json(
-        { code: "turn_not_found", message: "Вопрос не найден." },
-        { status: 404 },
-      );
-    }
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/next`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { turnId?: string };
+      if (
+        params.sessionId !== workspace.session.id ||
+        body.turnId !== workspace.currentTurn?.id
+      ) {
+        return HttpResponse.json(
+          { code: "turn_not_found", message: "Вопрос не найден." },
+          { status: 404 },
+        );
+      }
 
-    workspace = {
-      ...workspace,
-      currentTurn: {
-        id: "turn_02",
-        index: 2,
-        question: "Когда стоит использовать unknown вместо any?",
-        hint: "Подумайте о безопасном сужении типа перед использованием значения.",
-        answer: null,
-        messages: [
-          {
-            id: "message_03",
-            role: "interviewer",
-            content: "Перейдём к следующему вопросу.",
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      },
-    };
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          id: "turn_02",
+          index: 2,
+          question: "Когда стоит использовать unknown вместо any?",
+          hint: "Подумайте о безопасном сужении типа перед использованием значения.",
+          answer: null,
+          messages: [
+            {
+              id: "message_03",
+              role: "interviewer",
+              content: "Перейдём к следующему вопросу.",
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      };
 
-    return HttpResponse.json(workspace);
-  }),
-  http.post(`${API_BASE_URL}/sessions/:sessionId/complete`, ({ params }) => {
+      return HttpResponse.json(workspace);
+    },
+  ),
+  http.post(`${API_BASE_URL}/sessions/:sessionId/finish`, ({ params }) => {
     if (params.sessionId !== workspace.session.id) {
       return HttpResponse.json(
         { code: "session_not_found", message: "Сессия не найдена." },

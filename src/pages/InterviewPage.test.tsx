@@ -35,7 +35,7 @@ describe("InterviewPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("сохраняет ответ и позволяет перейти к следующему вопросу", async () => {
+  it("позволяет перейти к следующему вопросу после диалога", async () => {
     const user = userEvent.setup();
 
     renderInterviewPage();
@@ -48,7 +48,9 @@ describe("InterviewPage", () => {
     );
     await user.click(screen.getByRole("button", { name: "Отправить ответ" }));
 
-    expect(await screen.findByText("Ответ сохранён")).toBeInTheDocument();
+    await screen.findByText(
+      "Верно. Приведите пример, где декларативное слияние действительно полезно.",
+    );
 
     await user.click(screen.getByRole("button", { name: "Следующий вопрос" }));
 
@@ -56,6 +58,27 @@ describe("InterviewPage", () => {
     expect(
       screen.getByText("Когда стоит использовать unknown вместо any?"),
     ).toBeInTheDocument();
+  });
+
+  it("отправляет реплику интервьюеру и показывает потоковый ответ модели", async () => {
+    const user = userEvent.setup();
+
+    renderInterviewPage();
+
+    await screen.findByRole("heading", { name: "Практика TypeScript" });
+
+    await user.type(
+      screen.getByLabelText("Ваш ответ"),
+      "Interface поддерживает декларативное слияние, а type — нет.",
+    );
+    await user.click(screen.getByRole("button", { name: "Отправить ответ" }));
+
+    expect(
+      await screen.findByText(
+        "Верно. Приведите пример, где декларативное слияние действительно полезно.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Ваш ответ")).toHaveValue("");
   });
 
   it("показывает завершённое состояние после окончания сессии", async () => {

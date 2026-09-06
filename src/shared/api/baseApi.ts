@@ -18,17 +18,24 @@ const tagTypes = [
   "Session",
 ] as const;
 
-function getDefaultApiBaseUrl() {
+function getCurrentOrigin() {
   if (typeof window === "undefined") {
-    return "http://localhost/api/";
+    return "http://localhost";
   }
 
-  return new URL("/api/", window.location.origin).toString();
+  return window.location.origin;
 }
 
-export const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()
-).replace(/\/$/, "");
+export function normalizeApiBaseUrl(
+  baseUrl: string,
+  origin = getCurrentOrigin(),
+) {
+  return new URL(baseUrl, origin).toString().replace(/\/$/, "");
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL ?? "/api",
+);
 
 export function toApiError(error: FetchBaseQueryError): ApiError {
   if (typeof error.data === "object" && error.data !== null) {
