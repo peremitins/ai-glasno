@@ -1,0 +1,66 @@
+.resume-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.resume-attach,
+.attached-file {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+  padding: 8px 10px;
+}
+
+.resume-attach:hover {
+  border-color: var(--focus-ring);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.resume-attach svg,
+.attached-file button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.attached-file {
+  max-width: 100%;
+  justify-content: space-between;
+  color: var(--text-primary);
+}
+
+.attached-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attached-file button {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.attached-file button:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}

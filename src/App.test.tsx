@@ -26,6 +26,12 @@ describe("App", () => {
       "href",
       "/auth",
     );
+    expect(
+      screen.getByRole("button", { name: "Свернуть боковую панель" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Навигация приложения" }),
+    ).toBeInTheDocument();
   });
 
   it("показывает страницу 404 для неизвестного маршрута", () => {

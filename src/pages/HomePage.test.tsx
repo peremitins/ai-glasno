@@ -35,10 +35,9 @@ describe("HomePage", () => {
 
     renderHomePage();
 
-    expect(screen.getByRole("status", { name: "Загрузка дашборда" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
+    expect(
+      screen.getByRole("status", { name: "Загрузка дашборда" }),
+    ).toHaveAttribute("aria-busy", "true");
   });
 
   it("отображает данные дашборда, полученные через API", async () => {
@@ -57,7 +56,9 @@ describe("HomePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Продолжить подготовку" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Завершено").nextElementSibling).toHaveTextContent("14");
+    expect(screen.getByText("Завершено").nextElementSibling).toHaveTextContent(
+      "14",
+    );
   });
 
   it("показывает сводку, последние сессии и быстрый старт", async () => {
@@ -85,17 +86,57 @@ describe("HomePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Продолжить подготовку" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Сессии").nextElementSibling).toHaveTextContent("5");
-    expect(screen.getByRole("heading", { name: "Последние интервью" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Настроить подробнее" })).toHaveAttribute(
-      "href",
-      "/interview/new",
+    expect(screen.getByText("Сессии").nextElementSibling).toHaveTextContent(
+      "5",
     );
+    expect(
+      screen.getByRole("heading", { name: "Последние интервью" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Настроить подробнее" }),
+    ).toHaveAttribute("href", "/interview/new");
     expect(screen.getByRole("link", { name: "История" })).toHaveAttribute(
       "href",
       "/history",
     );
     expect(screen.getByText("Frontend-разработчик")).toBeInTheDocument();
+  });
+
+  it("собирает каркас первого запуска с резюме и сценариями", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/dashboard`, () =>
+        HttpResponse.json(
+          createDashboardFixture({
+            activeSessions: 0,
+            completedSessions: 0,
+            recentSessions: [],
+          }),
+        ),
+      ),
+    );
+
+    renderHomePage();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Бесплатная репетиция собеседования",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /Роль или должность/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /Резюме или опыт/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Прикрепить файл" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Три коротких шага" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Что можно потренировать" }),
+    ).toBeInTheDocument();
   });
 
   it("показывает прикладную ошибку при недоступности дашборда", async () => {
