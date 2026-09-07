@@ -1,207 +1,36 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { BriefcaseBusiness, FileText, Link2, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router";
-
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import { useCreateSessionMutation } from "@/entities/session/api/sessionApi";
-import {
-  sessionDraftSchema,
-  type SessionDraft,
-} from "@/entities/session/model/types";
-import {
-  clearDraft,
-  saveDraft,
-} from "@/features/interview/model/interviewSlice";
+import { sessionDraftSchema, type SessionDraft } from "@/entities/session/model/types";
+import { clearDraft, saveDraft } from "@/features/interview/model/interviewSlice";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
+import "./NewInterviewPage.css";
 
-const stepFields: Array<Array<keyof SessionDraft>> = [
-  ["vacancy"],
-  ["profile"],
-  ["level", "format"],
-  ["questionsCount", "durationMinutes", "includeHints"],
-];
-
-const stepTitles = ["Вакансия", "Профиль", "Формат", "Настройки вопросов"];
+type TrainingMode = "candidate" | "interviewer";
+type SourceMode = "link" | "manual";
+const levels: ReadonlyArray<{ value: SessionDraft["level"]; text: string }> = [{ value: "junior", text: "Junior" }, { value: "middle", text: "Middle" }, { value: "senior", text: "Senior" }];
+const formats: ReadonlyArray<{ value: SessionDraft["format"]; title: string; text: string }> = [{ value: "technical", title: "Техническое", text: "Задачи, архитектура и стек" }, { value: "behavioral", title: "Поведенческое", text: "Опыт, коммуникация и мотивация" }, { value: "mixed", title: "Смешанное", text: "Сбалансированный сценарий" }];
 
 export function NewInterviewPage() {
-  const dispatch = useAppDispatch();
-  const draft = useAppSelector((state) => state.interview.draft);
-  const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const dispatch = useAppDispatch(); const draft = useAppSelector((state) => state.interview.draft); const navigate = useNavigate();
+  const [trainingMode, setTrainingMode] = useState<TrainingMode>("candidate"); const [sourceMode, setSourceMode] = useState<SourceMode>("manual");
   const [createSession, createState] = useCreateSessionMutation();
-  const form = useForm<SessionDraft>({
-    defaultValues: draft,
-    resolver: zodResolver(sessionDraftSchema),
-  });
-  const values = useWatch({ control: form.control });
-  const savedDraftRef = useRef(draft);
-
-  useEffect(() => {
-    const nextDraft = { ...savedDraftRef.current, ...values };
-
-    if (isSameDraft(savedDraftRef.current, nextDraft)) {
-      return;
-    }
-
-    savedDraftRef.current = nextDraft;
-    dispatch(saveDraft(nextDraft));
-  }, [dispatch, values]);
-
-  async function goNext() {
-    if (await form.trigger(stepFields[step])) {
-      setStep((currentStep) => currentStep + 1);
-    }
-  }
-
-  async function create(values: SessionDraft) {
-    try {
-      const session = await createSession(values).unwrap();
-      dispatch(clearDraft());
-      navigate(`/interview/${session.id}`);
-    } catch (error) {
-      form.setError("root", { message: getApiErrorMessage(error) });
-    }
-  }
-
-  return (
-    <section className="max-w-2xl space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">
-          Новая сессия · шаг {step + 1} из {stepTitles.length}
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight">{stepTitles[step]}</h1>
-        <p className="text-muted-foreground">
-          Укажите параметры, чтобы подготовить практическую сессию.
-        </p>
-      </header>
-      <form
-        className="space-y-5 rounded-lg border border-border bg-card p-6"
-        noValidate
-        onSubmit={form.handleSubmit(create)}
-      >
-        {step === 0 && (
-          <Field label="Вакансия" error={form.formState.errors.vacancy?.message}>
-            <textarea
-              {...form.register("vacancy")}
-              className="min-h-28 rounded-md border border-input bg-background px-3 py-2"
-              id="vacancy"
-              placeholder="Например: Senior Frontend Developer"
-            />
-          </Field>
-        )}
-        {step === 1 && (
-          <Field label="Профиль кандидата" error={form.formState.errors.profile?.message}>
-            <textarea
-              {...form.register("profile")}
-              className="min-h-32 rounded-md border border-input bg-background px-3 py-2"
-              id="profile"
-              placeholder="Опишите опыт и навыки кандидата"
-            />
-          </Field>
-        )}
-        {step === 2 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Уровень" error={form.formState.errors.level?.message}>
-              <select {...form.register("level")} className="rounded-md border border-input bg-background px-3 py-2" id="level">
-                <option value="junior">Junior</option>
-                <option value="middle">Middle</option>
-                <option value="senior">Senior</option>
-              </select>
-            </Field>
-            <Field label="Формат" error={form.formState.errors.format?.message}>
-              <select {...form.register("format")} className="rounded-md border border-input bg-background px-3 py-2" id="format">
-                <option value="technical">Техническое интервью</option>
-                <option value="behavioral">Поведенческое интервью</option>
-                <option value="mixed">Смешанное интервью</option>
-              </select>
-            </Field>
-          </div>
-        )}
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Количество вопросов" error={form.formState.errors.questionsCount?.message}>
-                <select {...form.register("questionsCount", { valueAsNumber: true })} className="rounded-md border border-input bg-background px-3 py-2" id="questions-count">
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={20}>20</option>
-                </select>
-              </Field>
-              <Field label="Длительность, минут" error={form.formState.errors.durationMinutes?.message}>
-                <select {...form.register("durationMinutes", { valueAsNumber: true })} className="rounded-md border border-input bg-background px-3 py-2" id="duration-minutes">
-                  <option value={15}>15</option>
-                  <option value={30}>30</option>
-                  <option value={45}>45</option>
-                  <option value={60}>60</option>
-                  <option value={90}>90</option>
-                </select>
-              </Field>
-            </div>
-            <label className="flex items-center gap-3" htmlFor="include-hints">
-              <input {...form.register("includeHints")} id="include-hints" type="checkbox" />
-              Показывать подсказки во время сессии
-            </label>
-          </div>
-        )}
-        {form.formState.errors.root && (
-          <p role="alert" className="text-sm text-destructive">
-            {form.formState.errors.root.message}
-          </p>
-        )}
-        <div className="flex items-center justify-between gap-3">
-          <button
-            className="rounded-md border border-border px-4 py-2 disabled:opacity-50"
-            disabled={step === 0 || createState.isLoading}
-            onClick={() => setStep((currentStep) => currentStep - 1)}
-            type="button"
-          >
-            Назад
-          </button>
-          {step < stepTitles.length - 1 ? (
-            <button className="rounded-md bg-primary px-4 py-2 text-primary-foreground" onClick={goNext} type="button">
-              Далее
-            </button>
-          ) : (
-            <button className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50" disabled={createState.isLoading} type="submit">
-              Создать сессию
-            </button>
-          )}
-        </div>
-      </form>
-    </section>
-  );
+  const form = useForm<SessionDraft>({ defaultValues: draft, resolver: zodResolver(sessionDraftSchema) });
+  const values = useWatch({ control: form.control }); const savedDraftRef = useRef(draft);
+  useEffect(() => { const next = { ...savedDraftRef.current, ...values }; if (!isSameDraft(savedDraftRef.current, next)) { savedDraftRef.current = next; dispatch(saveDraft(next)); } }, [dispatch, values]);
+  async function create(data: SessionDraft) { try { const session = await createSession(data).unwrap(); dispatch(clearDraft()); navigate(`/interview/${session.id}`); } catch (error) { form.setError("root", { message: getApiErrorMessage(error) }); } }
+  return <form className="interview-setup" noValidate onSubmit={form.handleSubmit(create)}>
+    <section className="setup-shell"><header className="setup-context-head"><div><p className="panel-label">НОВАЯ РЕПЕТИЦИЯ</p><h1>Настройте контекст интервью</h1><p className="setup-description">Добавьте вакансию и профиль — сценарий будет собран под них.</p></div><div aria-label="Режим тренировки" className="training-mode-switch" role="radiogroup"><Choice active={trainingMode === "candidate"} meta="Вы отвечаете" onClick={() => setTrainingMode("candidate")} title="Кандидат"/><Choice active={trainingMode === "interviewer"} meta="Вы проводите" onClick={() => setTrainingMode("interviewer")} title="Интервьюер"/></div></header>
+      <div className="context-grid"><article className="context-column"><div className="panel-head"><p className="panel-label">КОНТЕКСТ</p><h2>{trainingMode === "candidate" ? "Вакансия" : "Роль кандидата"}</h2></div><div className="source-tabs" role="tablist"><Tab active={sourceMode === "link"} icon={<Link2/>} onClick={() => setSourceMode("link")} title="По ссылке"/><Tab active={sourceMode === "manual"} icon={<BriefcaseBusiness/>} onClick={() => setSourceMode("manual")} title="Вручную"/></div><label className="setup-field" htmlFor="vacancy"><span>{sourceMode === "link" ? "Ссылка на вакансию" : "Вакансия"}</span>{sourceMode === "link" ? <input id="vacancy" placeholder="https://hh.ru/vacancy/…" {...form.register("vacancy")}/> : <textarea id="vacancy" placeholder="Название позиции, задачи, технологии и ожидания от кандидата" {...form.register("vacancy")}/>}<ErrorText error={form.formState.errors.vacancy?.message}/></label>{sourceMode === "manual" && <p className="field-hint">Можно вставить описание вакансии целиком или кратко перечислить требования.</p>}</article>
+        <article className="context-column context-column--candidate"><div className="panel-head"><p className="panel-label">{trainingMode === "candidate" ? "КАНДИДАТ" : "СЦЕНАРИЙ"}</p><h2>{trainingMode === "candidate" ? "Ваш опыт" : "Портрет кандидата"}</h2></div><p className="source-hint">{trainingMode === "candidate" ? "Расскажите об опыте, ключевых навыках и проектах." : "Опишите опыт кандидата, которого будете интервьюировать."}</p><div className="file-placeholder"><FileText/><span><strong>Контекст кандидата</strong><small>Текст резюме или краткое описание</small></span></div><label className="setup-field" htmlFor="profile"><span className="sr-only">Профиль кандидата</span><textarea id="profile" placeholder="Например: 5 лет во фронтенде, React, TypeScript, опыт работы с дизайн-системами…" {...form.register("profile")}/><ErrorText error={form.formState.errors.profile?.message}/></label></article></div></section>
+    <section className="settings-panel"><header className="panel-head"><p className="panel-label">ПАРАМЕТРЫ</p><h2>Сценарий интервью</h2></header><div className="parameter-grid"><OptionGroup title="Уровень" values={levels} value={values.level ?? "middle"} onChange={(value) => form.setValue("level", value, { shouldDirty: true })}/><OptionGroup title="Формат" values={formats} value={values.format ?? "technical"} onChange={(value) => form.setValue("format", value, { shouldDirty: true })}/><section className="parameter-group"><h3>Длительность</h3><div className="select-grid"><label>Вопросов<select aria-label="Количество вопросов" {...form.register("questionsCount", { valueAsNumber: true })}><option value={5}>5 вопросов</option><option value={10}>10 вопросов</option><option value={15}>15 вопросов</option><option value={20}>20 вопросов</option></select></label><label>Время<select aria-label="Длительность, минут" {...form.register("durationMinutes", { valueAsNumber: true })}><option value={15}>15 минут</option><option value={30}>30 минут</option><option value={45}>45 минут</option><option value={60}>60 минут</option><option value={90}>90 минут</option></select></label></div></section><label className="hint-toggle" htmlFor="include-hints"><input id="include-hints" type="checkbox" {...form.register("includeHints")}/><span><strong>Подсказки во время интервью</strong><small>Идеи для ответа и ориентиры по вопросу</small></span></label></div>{form.formState.errors.root && <p className="setup-error" role="alert">{form.formState.errors.root.message}</p>}<footer className="setup-footer"><p>Настройки можно изменить перед следующим интервью.</p><button disabled={createState.isLoading} type="submit">{createState.isLoading ? "Подготавливаем…" : "Начать репетицию"}<Sparkles/></button></footer></section></form>;
 }
-
-function isSameDraft(first: SessionDraft, second: SessionDraft) {
-  return (
-    first.vacancy === second.vacancy &&
-    first.profile === second.profile &&
-    first.format === second.format &&
-    first.level === second.level &&
-    first.questionsCount === second.questionsCount &&
-    first.durationMinutes === second.durationMinutes &&
-    first.includeHints === second.includeHints
-  );
-}
-
-function Field({
-  children,
-  error,
-  label,
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-}) {
-  const fieldId = label === "Вакансия" ? "vacancy" : label === "Профиль кандидата" ? "profile" : label === "Уровень" ? "level" : label === "Формат" ? "format" : label === "Количество вопросов" ? "questions-count" : "duration-minutes";
-
-  return (
-    <label className="grid gap-2" htmlFor={fieldId}>
-      {label}
-      {children}
-      {error && <span className="text-sm text-destructive">{error}</span>}
-    </label>
-  );
-}
+function Choice({ active, meta, onClick, title }: { active: boolean; meta: string; onClick: () => void; title: string }) { return <button aria-checked={active} className={active ? "mode-button mode-button--active" : "mode-button"} onClick={onClick} role="radio" type="button"><strong>{title}</strong><small>{meta}</small></button>; }
+function Tab({ active, icon, onClick, title }: { active: boolean; icon: React.ReactNode; onClick: () => void; title: string }) { return <button aria-selected={active} className={active ? "source-tab source-tab--active" : "source-tab"} onClick={onClick} role="tab" type="button">{icon}{title}</button>; }
+function ErrorText({ error }: { error?: string }) { return error ? <span className="field-error">{error}</span> : null; }
+function OptionGroup<T extends string>({ onChange, title, value, values }: { onChange: (value: T) => void; title: string; value: T; values: readonly { value: T; text: string; title?: string }[] }) { return <section className="parameter-group"><h3>{title}</h3><div className="option-cards" role="radiogroup">{values.map((option) => <button aria-checked={value === option.value} className={value === option.value ? "option-card option-card--active" : "option-card"} key={option.value} onClick={() => onChange(option.value)} role="radio" type="button"><strong>{option.title ?? option.text}</strong>{option.title && <small>{option.text}</small>}</button>)}</div></section>; }
+function isSameDraft(a: SessionDraft, b: SessionDraft) { return a.vacancy === b.vacancy && a.profile === b.profile && a.format === b.format && a.level === b.level && a.questionsCount === b.questionsCount && a.durationMinutes === b.durationMinutes && a.includeHints === b.includeHints; }

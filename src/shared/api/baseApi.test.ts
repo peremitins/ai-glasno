@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeApiBaseUrl } from "./baseApi";
+import { getApiErrorMessage, normalizeApiBaseUrl } from "./baseApi";
 
 describe("normalizeApiBaseUrl", () => {
   it("приводит относительный адрес API к текущему origin", () => {
@@ -16,5 +16,14 @@ describe("normalizeApiBaseUrl", () => {
         "http://localhost:5173",
       ),
     ).toBe("https://api.example.test/interview");
+  });
+
+  it("извлекает сообщение из ошибки RTK Query", () => {
+    expect(
+      getApiErrorMessage({
+        data: { message: "Не удалось создать сессию: сервер недоступен" },
+        status: 503,
+      }),
+    ).toBe("Не удалось создать сессию: сервер недоступен");
   });
 });

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { getDb, schema } from "./client";
 
@@ -50,7 +50,7 @@ export class InterviewRepository {
             schema.interviewSessions.anonymousSessionId,
             owner.anonymousSessionId,
           ),
-          eq(schema.interviewSessions.userId, null),
+          isNull(schema.interviewSessions.userId),
         );
     return this.database
       .select()

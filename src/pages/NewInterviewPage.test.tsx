@@ -25,21 +25,23 @@ function renderNewInterviewPage() {
 }
 
 describe("NewInterviewPage", () => {
-  it("не позволяет перейти к следующему шагу без вакансии", async () => {
+  it("не создаёт репетицию без вакансии", async () => {
     const user = userEvent.setup();
 
     renderNewInterviewPage();
-    await user.click(screen.getByRole("button", { name: "Далее" }));
+    await user.click(
+      screen.getByRole("button", { name: "Начать репетицию" }),
+    );
 
     expect(
       await screen.findByText("Опишите вакансию не короче 10 символов"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Вакансия" }),
+      screen.getByRole("heading", { name: "Настройте контекст интервью" }),
     ).toBeInTheDocument();
   });
 
-  it("создаёт сессию после заполнения всех шагов и открывает её", async () => {
+  it("создаёт сессию из единой формы и открывает её", async () => {
     const user = userEvent.setup();
 
     renderNewInterviewPage();
@@ -47,18 +49,11 @@ describe("NewInterviewPage", () => {
       screen.getByLabelText("Вакансия"),
       "Senior Frontend Developer",
     );
-    await user.click(screen.getByRole("button", { name: "Далее" }));
-
     await user.type(
       screen.getByLabelText("Профиль кандидата"),
       "Разрабатываю приложения на React и TypeScript.",
     );
-    await user.click(screen.getByRole("button", { name: "Далее" }));
-
-    await user.selectOptions(screen.getByLabelText("Уровень"), "senior");
-    await user.selectOptions(screen.getByLabelText("Формат"), "technical");
-    await user.click(screen.getByRole("button", { name: "Далее" }));
-
+    await user.click(screen.getByRole("radio", { name: "Senior" }));
     await user.selectOptions(
       screen.getByLabelText("Количество вопросов"),
       "10",
@@ -67,7 +62,9 @@ describe("NewInterviewPage", () => {
       screen.getByLabelText("Длительность, минут"),
       "45",
     );
-    await user.click(screen.getByRole("button", { name: "Создать сессию" }));
+    await user.click(
+      screen.getByRole("button", { name: "Начать репетицию" }),
+    );
 
     expect(
       await screen.findByRole("heading", { name: "Senior Frontend Developer" }),
