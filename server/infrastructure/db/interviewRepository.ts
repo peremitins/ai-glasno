@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import { getDb, schema } from "./client";
 
@@ -37,6 +37,26 @@ export class InterviewRepository {
       .returning();
     if (!session) throw new Error("Не удалось создать интервью");
     return session;
+  }
+
+  async listForOwner(owner: {
+    anonymousSessionId: string;
+    userId?: string | null;
+  }) {
+    const ownership = owner.userId
+      ? eq(schema.interviewSessions.userId, owner.userId)
+      : and(
+          eq(
+            schema.interviewSessions.anonymousSessionId,
+            owner.anonymousSessionId,
+          ),
+          eq(schema.interviewSessions.userId, null),
+        );
+    return this.database
+      .select()
+      .from(schema.interviewSessions)
+      .where(ownership)
+      .orderBy(desc(schema.interviewSessions.createdAt));
   }
 
   async listTurns(sessionId: string) {
