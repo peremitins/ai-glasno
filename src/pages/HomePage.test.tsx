@@ -1,7 +1,8 @@
 import { Provider } from "react-redux";
 import { render, screen } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
-import { MemoryRouter } from "react-router";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, useLocation } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { createAppStore } from "@/app/store";
@@ -11,6 +12,11 @@ import { server } from "@/test/server";
 
 import { HomePage } from "./HomePage";
 
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}</output>;
+}
+
 function renderHomePage() {
   const store = createAppStore();
 
@@ -18,6 +24,7 @@ function renderHomePage() {
     <Provider store={store}>
       <MemoryRouter>
         <HomePage />
+        <LocationProbe />
       </MemoryRouter>
     </Provider>,
   );
@@ -156,6 +163,26 @@ describe("HomePage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Не удалось загрузить данные. Попробуйте ещё раз.",
+    );
+  });
+
+  it("создаёт быструю репетицию и открывает сессию", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API_BASE_URL}/dashboard`, () =>
+        HttpResponse.json(createDashboardFixture({ activeSessions: 0, completedSessions: 0, recentSessions: [] })),
+      ),
+    );
+
+    renderHomePage();
+    await user.type(
+      await screen.findByRole("textbox", { name: /Роль или должность/ }),
+      "Frontend-разработчик",
+    );
+    await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
+
+    expect(await screen.findByTestId("location")).toHaveTextContent(
+      "/interview/session_03",
     );
   });
 });

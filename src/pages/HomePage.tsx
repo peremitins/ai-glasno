@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { useGetDashboardQuery } from "@/entities/dashboard/api/dashboardApi";
+import { useCreateSessionMutation } from "@/entities/session/api/sessionApi";
 import type { InterviewSession } from "@/entities/session/model/types";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
 
@@ -268,7 +269,9 @@ function QuickStartForm({
   includeResume?: boolean;
 }) {
   const navigate = useNavigate();
+  const [createSession, createState] = useCreateSessionMutation();
   const [source, setSource] = useState("");
+  const [resume, setResume] = useState("");
   const [error, setError] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
@@ -277,14 +280,29 @@ function QuickStartForm({
     : "dashboard-source-returning";
   const resumeInputId = `${sourceId}-resume`;
   const resumeFileInputId = `${sourceId}-resume-file`;
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (source.trim().length < 2) {
       setError("Добавьте ссылку, текст вакансии или роль");
       return;
     }
-    setError("");
-    navigate("/interview/new");
+    try {
+      const session = await createSession({
+        vacancy: source.trim(),
+        profile:
+          resume.trim() ||
+          "Кандидат начинает репетицию и уточнит опыт во время интервью.",
+        format: "mixed",
+        level: "middle",
+        questionsCount: 5,
+        durationMinutes: 15,
+        includeHints: true,
+      }).unwrap();
+      setError("");
+      navigate(`/interview/${session.id}`);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    }
   }
   return (
     <form className="launcher-form" noValidate onSubmit={submit}>
@@ -307,6 +325,7 @@ function QuickStartForm({
           <textarea
             aria-describedby={`${resumeInputId}-hint`}
             id={resumeInputId}
+            onChange={(event) => setResume(event.target.value)}
             placeholder="Коротко: опыт, стек, проекты, сильные стороны"
           />
           <input
@@ -369,8 +388,8 @@ function QuickStartForm({
             {error}
           </p>
         )}
-        <button className="primary-action" type="submit">
-          Начать репетицию
+        <button className="primary-action" disabled={createState.isLoading} type="submit">
+          {createState.isLoading ? "Подготавливаем…" : "Начать репетицию"}
           <ArrowRight aria-hidden="true" />
         </button>
       </div>
