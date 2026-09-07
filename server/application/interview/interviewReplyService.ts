@@ -9,11 +9,17 @@ type ReplyRepository = {
     anonymousSessionId: string;
     userId: string | null;
     status: string;
+    role?: string | null;
   } | null>;
   findTurnById: (
     sessionId: string,
     turnId: string,
-  ) => Promise<{ id: string; sessionId: string; metadata: unknown } | null>;
+  ) => Promise<{
+    id: string;
+    sessionId: string;
+    question: string;
+    metadata: unknown;
+  } | null>;
   updateTurnMetadata: (
     sessionId: string,
     turnId: string,
@@ -62,7 +68,12 @@ export class InterviewReplyService {
     sessionId: string;
     turnId: string;
     message: string;
-    reply: () => AsyncGenerator<string, void, void>;
+    reply: (input: {
+      role: string | null;
+      question: string;
+      message: string;
+      dialogue: Array<{ role: "user" | "interviewer"; content: string }>;
+    }) => AsyncGenerator<string, void, void>;
   }): AsyncGenerator<string, void, void> {
     const session = assertOwnedInterviewSession(
       await this.repository.findSessionById(params.sessionId),
@@ -84,7 +95,12 @@ export class InterviewReplyService {
     });
 
     let fullReply = "";
-    for await (const chunk of params.reply()) {
+    for await (const chunk of params.reply({
+      role: session.role ?? null,
+      question: turn.question,
+      message: params.message.trim(),
+      dialogue: dialogue.map(({ role, content }) => ({ role, content })),
+    })) {
       fullReply += chunk;
       yield chunk;
     }

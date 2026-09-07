@@ -15,6 +15,7 @@ describe("InterviewReplyService", () => {
       findTurnById: async () => ({
         id: "turn-1",
         sessionId: "session-1",
+        question: "Расскажите о проекте?",
         metadata: { dialogue: [] },
       }),
       updateTurnMetadata: async (_sessionId, _turnId, metadata) => {
