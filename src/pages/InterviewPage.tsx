@@ -1,4 +1,14 @@
-import { Lightbulb, Send, Timer, X } from "lucide-react";
+import {
+  Camera,
+  CameraOff,
+  Expand,
+  Lightbulb,
+  MessageCircle,
+  Minimize,
+  Send,
+  Timer,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { useParams } from "react-router";
 
@@ -35,6 +45,9 @@ export function InterviewPage() {
   const [streamingReply, setStreamingReply] = useState("");
   const [pendingCandidateMessage, setPendingCandidateMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   if (isLoading) return <SessionLoading />;
 
@@ -133,7 +146,9 @@ export function InterviewPage() {
 
   const progress = Math.round((currentTurn.index / totalQuestions) * 100);
   return (
-    <section className="interview-workspace">
+    <section
+      className={`interview-workspace ${fullscreen ? "interview-workspace--fullscreen" : ""}`}
+    >
       <header className="session-header glass-frame glass-frame--soft">
         <div>
           <p className="session-eyebrow">
@@ -148,6 +163,28 @@ export function InterviewPage() {
       </header>
       <div className="session-progress" aria-label={`Прогресс ${progress}%`}>
         <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="interview-video-stage">
+        <section className="video-tile video-tile--interviewer">
+          <div className="video-avatar" aria-hidden="true">
+            ИИ
+          </div>
+          <span>Интервьюер</span>
+          <small>На связи</small>
+        </section>
+        <section
+          className={`video-tile video-tile--candidate ${cameraEnabled ? "video-tile--camera" : ""}`}
+        >
+          {cameraEnabled ? (
+            <Camera aria-hidden="true" />
+          ) : (
+            <CameraOff aria-hidden="true" />
+          )}
+          <span>Вы</span>
+          <small>
+            {cameraEnabled ? "Камера включена" : "Камера выключена"}
+          </small>
+        </section>
       </div>
       <div className="interview-grid">
         <main className="question-panel glass-frame">
@@ -224,6 +261,24 @@ export function InterviewPage() {
           </div>
         </main>
         <aside className="session-side-panel">
+          {chatOpen && (
+            <section className="chat-card glass-frame" aria-label="Чат">
+              <div className="hint-card-header">
+                <h2>Чат</h2>
+                <button
+                  aria-label="Закрыть чат"
+                  onClick={() => setChatOpen(false)}
+                  type="button"
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+              <p>
+                Обсуждение вопроса и ответы интервьюера отображаются в основной
+                области.
+              </p>
+            </section>
+          )}
           {hintsOpen && (
             <section
               className="hint-card glass-frame"
@@ -250,6 +305,50 @@ export function InterviewPage() {
           )}
           <section className="session-controls glass-frame glass-frame--soft">
             <p className="session-eyebrow">Управление сессией</p>
+            <button
+              aria-label={chatOpen ? "Скрыть чат" : "Открыть чат"}
+              className={`session-button session-button--secondary ${chatOpen ? "session-button--active" : ""}`}
+              disabled={isBusy}
+              onClick={() => setChatOpen((value) => !value)}
+              type="button"
+            >
+              <MessageCircle aria-hidden="true" />
+              {chatOpen ? "Скрыть чат" : "Открыть чат"}
+            </button>
+            <button
+              aria-label={
+                cameraEnabled ? "Выключить камеру" : "Включить камеру"
+              }
+              className="session-button session-button--secondary"
+              disabled={isBusy}
+              onClick={() => setCameraEnabled((value) => !value)}
+              type="button"
+            >
+              {cameraEnabled ? (
+                <Camera aria-hidden="true" />
+              ) : (
+                <CameraOff aria-hidden="true" />
+              )}
+              Камера
+            </button>
+            <button
+              aria-label={
+                fullscreen
+                  ? "Выйти из полноэкранного режима"
+                  : "Открыть полноэкранный режим"
+              }
+              className="session-button session-button--secondary"
+              disabled={isBusy}
+              onClick={() => setFullscreen((value) => !value)}
+              type="button"
+            >
+              {fullscreen ? (
+                <Minimize aria-hidden="true" />
+              ) : (
+                <Expand aria-hidden="true" />
+              )}
+              Экран
+            </button>
             <button
               className="session-button session-button--primary"
               disabled={isBusy}

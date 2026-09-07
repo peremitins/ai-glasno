@@ -35,6 +35,24 @@ describe("InterviewPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("открывает и скрывает боковой чат через панель управления", async () => {
+    const user = userEvent.setup();
+    renderInterviewPage();
+
+    await screen.findByRole("heading", { name: "Практика TypeScript" });
+    expect(screen.getByRole("heading", { name: "Чат" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Скрыть чат" }));
+    expect(
+      screen.queryByRole("heading", { name: "Чат" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Открыть чат" }));
+    expect(
+      await screen.findByRole("heading", { name: "Чат" }),
+    ).toBeInTheDocument();
+  });
+
   it("позволяет перейти к следующему вопросу после диалога", async () => {
     const user = userEvent.setup();
 

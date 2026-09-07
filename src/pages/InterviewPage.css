@@ -12,6 +12,70 @@
   gap: 16px;
   max-width: 1180px;
 }
+.interview-workspace--fullscreen {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  max-width: none;
+  overflow: auto;
+  padding: 20px;
+  background: var(--app-bg);
+}
+.interview-video-stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-height: 220px;
+}
+.video-tile {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 200px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+.video-tile--interviewer {
+  background: radial-gradient(
+    circle at 50% 30%,
+    color-mix(in srgb, var(--accent-2) 20%, transparent),
+    var(--surface-soft) 64%
+  );
+}
+.video-tile--candidate {
+  color: var(--text-secondary);
+}
+.video-tile--camera {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+.video-tile svg {
+  width: 32px;
+  height: 32px;
+}
+.video-tile span {
+  font-size: 14px;
+  font-weight: 800;
+}
+.video-tile small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.video-avatar {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--accent-2);
+  font-size: 20px;
+  font-weight: 900;
+}
 .session-header {
   display: flex;
   align-items: center;
@@ -188,6 +252,20 @@
 .hint-card-header h2 {
   font-size: 18px;
 }
+.chat-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+.chat-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.session-button--active {
+  border-color: var(--accent-2);
+}
 .hint-card-header button {
   display: grid;
   width: 32px;
@@ -261,6 +339,12 @@
   }
 }
 @media (max-width: 620px) {
+  .interview-video-stage {
+    grid-template-columns: 1fr;
+  }
+  .video-tile {
+    min-height: 150px;
+  }
   .session-header,
   .session-actions {
     align-items: stretch;
