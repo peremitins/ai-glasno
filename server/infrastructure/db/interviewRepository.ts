@@ -14,6 +14,31 @@ export class InterviewRepository {
     return session ?? null;
   }
 
+  async createSession(input: {
+    anonymousSessionId: string;
+    userId: string | null;
+    trainingMode: string;
+    source: string;
+    vacancyTitle: string;
+    vacancyRaw: string;
+    resumeRaw: string;
+    role: string;
+    level: string;
+    questionCount: number;
+    language: string;
+    interviewerMode: string;
+    interviewerAvatarId: string;
+    status: string;
+    metadata: Record<string, unknown>;
+  }) {
+    const [session] = await this.database
+      .insert(schema.interviewSessions)
+      .values(input)
+      .returning();
+    if (!session) throw new Error("Не удалось создать интервью");
+    return session;
+  }
+
   async listTurns(sessionId: string) {
     return this.database
       .select()
