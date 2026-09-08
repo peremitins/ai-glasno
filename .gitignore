@@ -16,6 +16,18 @@ dist-ssr
 .env.*
 *.local
 
+# Конфиденциальные материалы развёртывания и локальные данные.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.sqlite
+*.sqlite3
+secrets/
+credentials/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
