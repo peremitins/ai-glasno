@@ -75,6 +75,7 @@ export function InterviewPage() {
         ),
       );
     },
+    question: data?.currentTurn?.question ?? null,
     sessionId: id,
     turnId: data?.currentTurn?.id ?? null,
   });
