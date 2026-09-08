@@ -15,12 +15,14 @@ export const initialSessionDraft: SessionDraft = {
 type InterviewState = {
   draft: SessionDraft;
   answerDraft: string;
+  answerDrafts: Record<string, string>;
   hintsOpen: boolean;
 };
 
 const initialState: InterviewState = {
   draft: initialSessionDraft,
   answerDraft: "",
+  answerDrafts: {},
   hintsOpen: false,
 };
 
@@ -40,6 +42,15 @@ const interviewSlice = createSlice({
     clearAnswerDraft(state) {
       state.answerDraft = "";
     },
+    setSessionAnswerDraft(
+      state,
+      action: PayloadAction<{ sessionId: string; value: string }>,
+    ) {
+      state.answerDrafts[action.payload.sessionId] = action.payload.value;
+    },
+    clearSessionAnswerDraft(state, action: PayloadAction<string>) {
+      delete state.answerDrafts[action.payload];
+    },
     toggleHints(state) {
       state.hintsOpen = !state.hintsOpen;
     },
@@ -51,10 +62,12 @@ const interviewSlice = createSlice({
 
 export const {
   clearAnswerDraft,
+  clearSessionAnswerDraft,
   clearDraft,
   closeHints,
   saveDraft,
   setAnswerDraft,
+  setSessionAnswerDraft,
   toggleHints,
 } = interviewSlice.actions;
 export const interviewReducer = interviewSlice.reducer;
