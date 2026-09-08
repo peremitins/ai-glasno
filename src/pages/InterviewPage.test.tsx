@@ -93,6 +93,7 @@ describe("InterviewPage", () => {
     const user = userEvent.setup();
     const stream = {
       getTracks: () => [],
+      getVideoTracks: () => [],
     } as unknown as MediaStream;
     const getUserMedia = vi.fn().mockResolvedValue(stream);
     const mediaDevices = navigator.mediaDevices;
@@ -118,6 +119,47 @@ describe("InterviewPage", () => {
         return video;
       });
       expect(preview?.srcObject).toBe(stream);
+    } finally {
+      play.mockRestore();
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: mediaDevices,
+      });
+    }
+  });
+
+  it("возвращает интерфейс камеры в безопасное состояние после потери видеопотока", async () => {
+    const user = userEvent.setup();
+    const listeners = new Map<string, () => void>();
+    const track = {
+      addEventListener: (_event: string, listener: () => void) => {
+        listeners.set(_event, listener);
+      },
+      stop: vi.fn(),
+    } as unknown as MediaStreamTrack;
+    const stream = {
+      getTracks: () => [track],
+      getVideoTracks: () => [track],
+    } as unknown as MediaStream;
+    const mediaDevices = navigator.mediaDevices;
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: { getUserMedia: vi.fn(async () => stream) },
+    });
+
+    try {
+      renderInterviewPage();
+      await screen.findByRole("heading", { name: "Практика TypeScript" });
+      await user.click(screen.getByRole("button", { name: "Включить камеру" }));
+      expect(await screen.findByText("Камера включена")).toBeInTheDocument();
+
+      listeners.get("ended")?.();
+
+      expect(await screen.findByText("Камера выключена")).toBeInTheDocument();
     } finally {
       play.mockRestore();
       Object.defineProperty(navigator, "mediaDevices", {
