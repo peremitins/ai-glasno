@@ -16,15 +16,6 @@ dist-ssr
 .env.*
 *.local
 
-# Локальные инструкции и настройки инструментов разработки.
-AGENTS.md
-CLAUDE.md
-.agents/
-.claude/
-.codex/
-.serena/
-.docs/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
