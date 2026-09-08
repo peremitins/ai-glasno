@@ -14,8 +14,16 @@ dist-ssr
 .output/
 .env
 .env.*
-!.env.example
 *.local
+
+# Локальные инструкции и настройки инструментов разработки.
+AGENTS.md
+CLAUDE.md
+.agents/
+.claude/
+.codex/
+.serena/
+.docs/
 
 # Editor directories and files
 .vscode/*
