@@ -14,10 +14,14 @@ export const initialSessionDraft: SessionDraft = {
 
 type InterviewState = {
   draft: SessionDraft;
+  answerDraft: string;
+  hintsOpen: boolean;
 };
 
 const initialState: InterviewState = {
   draft: initialSessionDraft,
+  answerDraft: "",
+  hintsOpen: false,
 };
 
 const interviewSlice = createSlice({
@@ -30,8 +34,27 @@ const interviewSlice = createSlice({
     clearDraft(state) {
       state.draft = initialSessionDraft;
     },
+    setAnswerDraft(state, action: PayloadAction<string>) {
+      state.answerDraft = action.payload;
+    },
+    clearAnswerDraft(state) {
+      state.answerDraft = "";
+    },
+    toggleHints(state) {
+      state.hintsOpen = !state.hintsOpen;
+    },
+    closeHints(state) {
+      state.hintsOpen = false;
+    },
   },
 });
 
-export const { clearDraft, saveDraft } = interviewSlice.actions;
+export const {
+  clearAnswerDraft,
+  clearDraft,
+  closeHints,
+  saveDraft,
+  setAnswerDraft,
+  toggleHints,
+} = interviewSlice.actions;
 export const interviewReducer = interviewSlice.reducer;

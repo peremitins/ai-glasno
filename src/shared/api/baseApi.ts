@@ -18,17 +18,24 @@ const tagTypes = [
   "Session",
 ] as const;
 
-function getDefaultApiBaseUrl() {
+function getCurrentOrigin() {
   if (typeof window === "undefined") {
-    return "http://localhost/api/";
+    return "http://localhost";
   }
 
-  return new URL("/api/", window.location.origin).toString();
+  return window.location.origin;
 }
 
-export const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()
-).replace(/\/$/, "");
+export function normalizeApiBaseUrl(
+  baseUrl: string,
+  origin = getCurrentOrigin(),
+) {
+  return new URL(baseUrl, origin).toString().replace(/\/$/, "");
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(
+  import.meta.env.VITE_API_BASE_URL ?? "/api",
+);
 
 export function toApiError(error: FetchBaseQueryError): ApiError {
   if (typeof error.data === "object" && error.data !== null) {
@@ -59,12 +66,28 @@ export function getApiErrorMessage(error: unknown) {
     }
   }
 
+  if (typeof error === "object" && error !== null && "data" in error) {
+    const { data } = error as { data?: unknown };
+
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "message" in data &&
+      typeof data.message === "string"
+    ) {
+      return data.message;
+    }
+  }
+
   return "Не удалось загрузить данные. Попробуйте ещё раз.";
 }
 
 export const baseApi = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_BASE_URL,
+    credentials: "include",
+  }),
   tagTypes,
   endpoints: () => ({}),
 });

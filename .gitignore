@@ -11,6 +11,10 @@ node_modules
 .worktrees/
 dist
 dist-ssr
+.output/
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files
