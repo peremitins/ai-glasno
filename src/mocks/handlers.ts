@@ -3,7 +3,11 @@ import { http, HttpResponse } from "msw";
 import { API_BASE_URL } from "@/shared/api/baseApi";
 
 import type { DashboardOverview } from "@/entities/dashboard/model/types";
-import type { SessionDraft } from "@/entities/session/model/types";
+import type {
+  InterviewWorkspace,
+  SessionCreationRequest,
+  SessionDraft,
+} from "@/entities/session/model/types";
 import type { AuthUser } from "@/entities/user/model/types";
 
 const dashboard: DashboardOverview = {
@@ -31,6 +35,37 @@ const dashboard: DashboardOverview = {
 const initialSessions = [...dashboard.recentSessions];
 let sessions = [...initialSessions];
 
+const initialWorkspace: InterviewWorkspace = {
+  session: initialSessions[0],
+  totalQuestions: 3,
+  currentTurn: {
+    id: "turn_01",
+    index: 1,
+    question: "Объясните разницу между type и interface в TypeScript.",
+    hint: "Сравните расширение, декларативное слияние и описание объектов.",
+    answer: null,
+    messages: [
+      {
+        id: "message_01",
+        role: "interviewer",
+        content: "Начнём с TypeScript. Ответьте развёрнуто и приведите пример.",
+        createdAt: "2026-09-06T09:00:00.000Z",
+      },
+    ],
+  },
+};
+
+let workspace: InterviewWorkspace = structuredClone(initialWorkspace);
+
+function createWorkspace(
+  session: InterviewWorkspace["session"],
+): InterviewWorkspace {
+  return {
+    ...structuredClone(initialWorkspace),
+    session,
+  };
+}
+
 const initialUser: AuthUser = {
   id: "user_01",
   email: "nikolay@example.com",
@@ -42,15 +77,24 @@ let user = initialUser;
 export function resetMockData() {
   user = initialUser;
   sessions = [...initialSessions];
+  workspace = structuredClone(initialWorkspace);
 }
 
 export const handlers = [
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
   http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
   http.post(`${API_BASE_URL}/sessions`, async ({ request }) => {
-    const body = (await request.json()) as Partial<SessionDraft>;
+    const body = (await request.json()) as Partial<SessionCreationRequest>;
+    const vacancy =
+      "source" in body && body.source
+        ? body.source.type === "hh_url"
+          ? body.source.url
+          : body.source.type === "text"
+            ? (body.source.title ?? body.source.text)
+            : body.source.role
+        : (body as Partial<SessionDraft>).vacancy;
 
-    if (!body.vacancy?.trim()) {
+    if (!vacancy?.trim()) {
       return HttpResponse.json(
         { code: "invalid_session", message: "Укажите вакансию." },
         { status: 400 },
@@ -59,13 +103,271 @@ export const handlers = [
 
     const session = {
       id: "session_03",
-      title: body.vacancy.trim(),
+      title: vacancy.trim(),
       status: "active" as const,
       completedAt: null,
     };
     sessions = [session, ...sessions];
+    workspace = createWorkspace(session);
 
     return HttpResponse.json(session, { status: 201 });
+  }),
+  http.get(`${API_BASE_URL}/sessions/:sessionId`, ({ params }) => {
+    if (params.sessionId !== workspace.session.id) {
+      return HttpResponse.json(
+        { code: "session_not_found", message: "Сессия не найдена." },
+        { status: 404 },
+      );
+    }
+
+    return HttpResponse.json(workspace);
+  }),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/reply-stream`,
+    async ({ params, request }) => {
+      const currentTurn = workspace.currentTurn;
+      const body = (await request.json()) as {
+        message?: string;
+        turnId?: string;
+      };
+      const message = body.message?.trim();
+
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        body.turnId !== currentTurn.id
+      ) {
+        return HttpResponse.json(
+          { code: "turn_not_found", message: "Вопрос не найден." },
+          { status: 404 },
+        );
+      }
+
+      if (!message) {
+        return HttpResponse.json(
+          {
+            code: "invalid_message",
+            message: "Введите ответ перед отправкой.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const interviewerReply =
+        "Верно. Приведите пример, где декларативное слияние действительно полезно.";
+      const createdAt = new Date().toISOString();
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          ...currentTurn,
+          answer: message,
+          messages: [
+            ...currentTurn.messages,
+            {
+              id: `message_${currentTurn.messages.length + 1}`,
+              role: "candidate",
+              content: message,
+              createdAt,
+            },
+            {
+              id: `message_${currentTurn.messages.length + 2}`,
+              role: "interviewer",
+              content: interviewerReply,
+              createdAt,
+            },
+          ],
+        },
+      };
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                output_text_delta: "Верно. Приведите пример, ",
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                output_text_delta:
+                  "где декларативное слияние действительно полезно.",
+              })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ done: true, state: workspace })}\n\n`,
+            ),
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new HttpResponse(stream, {
+        headers: { "content-type": "text/event-stream" },
+      });
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/realtime-sdp`,
+    ({ params }) => {
+      if (params.sessionId !== workspace.session.id) {
+        return HttpResponse.json(
+          { code: "session_not_found", message: "Сессия не найдена." },
+          { status: 404 },
+        );
+      }
+
+      return HttpResponse.json({ sdp: "mock-realtime-answer" });
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/dialogue`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        content?: string;
+        role?: "candidate" | "interviewer";
+        turnId?: string;
+      };
+      const currentTurn = workspace.currentTurn;
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        body.turnId !== currentTurn.id ||
+        !body.content?.trim() ||
+        !body.role
+      ) {
+        return HttpResponse.json(
+          { code: "invalid_dialogue", message: "Реплика не сохранена." },
+          { status: 400 },
+        );
+      }
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          ...currentTurn,
+          messages: [
+            ...currentTurn.messages,
+            {
+              id: `message_${currentTurn.messages.length + 1}`,
+              role: body.role,
+              content: body.content.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      };
+      return HttpResponse.json(workspace);
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/answer`,
+    async ({ params, request }) => {
+      const currentTurn = workspace.currentTurn;
+
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        params.turnId !== currentTurn.id
+      ) {
+        return HttpResponse.json(
+          { code: "turn_not_found", message: "Вопрос не найден." },
+          { status: 404 },
+        );
+      }
+
+      const body = (await request.json()) as { answer?: string };
+      const answer = body.answer?.trim();
+
+      if (!answer) {
+        return HttpResponse.json(
+          { code: "invalid_answer", message: "Введите ответ перед отправкой." },
+          { status: 400 },
+        );
+      }
+
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          ...currentTurn,
+          answer,
+          messages: [
+            ...currentTurn.messages,
+            {
+              id: `message_${currentTurn.messages.length + 1}`,
+              role: "candidate",
+              content: answer,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      };
+
+      return HttpResponse.json(workspace);
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/next`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { turnId?: string };
+      if (
+        params.sessionId !== workspace.session.id ||
+        body.turnId !== workspace.currentTurn?.id
+      ) {
+        return HttpResponse.json(
+          { code: "turn_not_found", message: "Вопрос не найден." },
+          { status: 404 },
+        );
+      }
+
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          id: "turn_02",
+          index: 2,
+          question: "Когда стоит использовать unknown вместо any?",
+          hint: "Подумайте о безопасном сужении типа перед использованием значения.",
+          answer: null,
+          messages: [
+            {
+              id: "message_03",
+              role: "interviewer",
+              content: "Перейдём к следующему вопросу.",
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      };
+
+      return HttpResponse.json(workspace);
+    },
+  ),
+  http.post(`${API_BASE_URL}/sessions/:sessionId/finish`, ({ params }) => {
+    if (params.sessionId !== workspace.session.id) {
+      return HttpResponse.json(
+        { code: "session_not_found", message: "Сессия не найдена." },
+        { status: 404 },
+      );
+    }
+
+    workspace = {
+      ...workspace,
+      session: {
+        ...workspace.session,
+        status: "completed",
+        completedAt: new Date().toISOString(),
+      },
+      currentTurn: null,
+    };
+    sessions = sessions.map((session) =>
+      session.id === workspace.session.id ? workspace.session : session,
+    );
+
+    return HttpResponse.json(workspace);
   }),
   http.post(`${API_BASE_URL}/auth/email/start`, () =>
     HttpResponse.json({ ok: true, devCode: "123456" }),
