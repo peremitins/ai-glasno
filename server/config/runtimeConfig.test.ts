@@ -5,12 +5,12 @@ import { readRuntimeConfig } from "./runtimeConfig";
 describe("readRuntimeConfig", () => {
   it("читает серверные переменные прежнего формата и не раскрывает секреты", () => {
     const config = readRuntimeConfig({
-      NUXT_DATABASE_URL: "postgres://user:password@localhost:5432/glasno",
-      NUXT_OPENAI_API_KEY: "secret-api-key",
-      NUXT_OPENAI_MODEL: "gpt-5-mini",
-      NUXT_REDIS_URL: "redis://localhost:6379",
-      NUXT_SESSION_SECRET: "session-secret",
-      NUXT_PUBLIC_API_BASE: "/api",
+      GLASNO_DATABASE_URL: "postgres://user:password@localhost:5432/glasno",
+      GLASNO_OPENAI_API_KEY: "secret-api-key",
+      GLASNO_OPENAI_MODEL: "gpt-5-mini",
+      GLASNO_REDIS_URL: "redis://localhost:6379",
+      GLASNO_SESSION_SECRET: "session-secret",
+      GLASNO_PUBLIC_API_BASE: "/api",
     });
 
     expect(config.server.openAi.apiKey).toBe("secret-api-key");
@@ -24,11 +24,11 @@ describe("readRuntimeConfig", () => {
   it("сообщает, если для серверного запуска не хватает обязательного секрета", () => {
     expect(() =>
       readRuntimeConfig({
-        NUXT_DATABASE_URL: "postgres://localhost/glasno",
-        NUXT_OPENAI_MODEL: "gpt-5-mini",
-        NUXT_REDIS_URL: "redis://localhost:6379",
-        NUXT_SESSION_SECRET: "session-secret",
+        GLASNO_DATABASE_URL: "postgres://localhost/glasno",
+        GLASNO_OPENAI_MODEL: "gpt-5-mini",
+        GLASNO_REDIS_URL: "redis://localhost:6379",
+        GLASNO_SESSION_SECRET: "session-secret",
       }),
-    ).toThrow("NUXT_OPENAI_API_KEY");
+    ).toThrow("GLASNO_OPENAI_API_KEY");
   });
 });
