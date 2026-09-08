@@ -63,7 +63,7 @@
   transition: width var(--motion-fast) var(--ease-out);
 }
 
-/* Режим видеозвонка перенесён из эталонной Vue-страницы. */
+/* Компоновка видеозвонка. */
 .call {
   display: flex;
   min-width: 0;

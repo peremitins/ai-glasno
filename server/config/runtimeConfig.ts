@@ -2,13 +2,13 @@ import { z } from "zod";
 import { config as loadEnvFile } from "dotenv";
 
 const environmentSchema = z.object({
-  NUXT_DATABASE_URL: z.string().min(1, "NUXT_DATABASE_URL обязателен"),
-  NUXT_OPENAI_API_KEY: z.string().min(1, "NUXT_OPENAI_API_KEY обязателен"),
-  NUXT_OPENAI_MODEL: z.string().min(1, "NUXT_OPENAI_MODEL обязателен"),
-  NUXT_OPENAI_REALTIME_MODEL: z.string().min(1).default("gpt-realtime-mini"),
-  NUXT_REDIS_URL: z.string().min(1, "NUXT_REDIS_URL обязателен"),
-  NUXT_SESSION_SECRET: z.string().min(1, "NUXT_SESSION_SECRET обязателен"),
-  NUXT_PUBLIC_API_BASE: z.string().default("/api"),
+  GLASNO_DATABASE_URL: z.string().min(1, "GLASNO_DATABASE_URL обязателен"),
+  GLASNO_OPENAI_API_KEY: z.string().min(1, "GLASNO_OPENAI_API_KEY обязателен"),
+  GLASNO_OPENAI_MODEL: z.string().min(1, "GLASNO_OPENAI_MODEL обязателен"),
+  GLASNO_OPENAI_REALTIME_MODEL: z.string().min(1).default("gpt-realtime-mini"),
+  GLASNO_REDIS_URL: z.string().min(1, "GLASNO_REDIS_URL обязателен"),
+  GLASNO_SESSION_SECRET: z.string().min(1, "GLASNO_SESSION_SECRET обязателен"),
+  GLASNO_PUBLIC_API_BASE: z.string().default("/api"),
 });
 
 export type RuntimeConfig = {
@@ -46,17 +46,17 @@ export function readRuntimeConfig(
 
   return {
     server: {
-      databaseUrl: value.NUXT_DATABASE_URL,
-      redisUrl: value.NUXT_REDIS_URL,
-      sessionSecret: value.NUXT_SESSION_SECRET,
+      databaseUrl: value.GLASNO_DATABASE_URL,
+      redisUrl: value.GLASNO_REDIS_URL,
+      sessionSecret: value.GLASNO_SESSION_SECRET,
       openAi: {
-        apiKey: value.NUXT_OPENAI_API_KEY,
-        model: value.NUXT_OPENAI_MODEL,
-        realtimeModel: value.NUXT_OPENAI_REALTIME_MODEL,
+        apiKey: value.GLASNO_OPENAI_API_KEY,
+        model: value.GLASNO_OPENAI_MODEL,
+        realtimeModel: value.GLASNO_OPENAI_REALTIME_MODEL,
       },
     },
     public: {
-      apiBase: value.NUXT_PUBLIC_API_BASE,
+      apiBase: value.GLASNO_PUBLIC_API_BASE,
     },
   };
 }
