@@ -5,6 +5,8 @@ export type RealtimeVoiceClient = {
 
 type StartRealtimeVoiceClientOptions = {
   exchangeSdp: (offerSdp: string) => Promise<string>;
+  onConnected?: () => void;
+  onDisconnected?: () => void;
   onEvent?: (event: unknown) => void;
   onRemoteStream?: (stream: MediaStream) => void;
 };
@@ -44,6 +46,22 @@ export async function startRealtimeVoiceClient(
       options.onEvent?.(event.data);
     }
   };
+  channel.onopen = () => options.onConnected?.();
+  channel.onclose = () => {
+    if (stopped) return;
+    stop();
+    options.onDisconnected?.();
+  };
+  peerConnection.onconnectionstatechange = () => {
+    if (
+      !stopped &&
+      (peerConnection.connectionState === "failed" ||
+        peerConnection.connectionState === "disconnected")
+    ) {
+      stop();
+      options.onDisconnected?.();
+    }
+  };
 
   try {
     const offer = await peerConnection.createOffer({
@@ -60,6 +78,7 @@ export async function startRealtimeVoiceClient(
       type: "answer",
       sdp: answerSdp,
     });
+    if (channel.readyState === "open") options.onConnected?.();
   } catch (error) {
     stop();
     throw error;

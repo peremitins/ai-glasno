@@ -11,11 +11,13 @@ import {
   startRealtimeVoiceClient,
   type RealtimeVoiceClient,
 } from "./realtimeVoiceClient";
+import { getCompletedRealtimeTranscript } from "./realtimeTranscript";
 
 type UseRealtimeVoiceOptions = {
   audioRef: React.RefObject<HTMLAudioElement | null>;
   onError: (message: string) => void;
   onWorkspace: (workspace: InterviewWorkspace) => void;
+  question: string | null;
   sessionId: string;
   turnId: string | null;
 };
@@ -24,6 +26,7 @@ export function useRealtimeVoice({
   audioRef,
   onError,
   onWorkspace,
+  question,
   sessionId,
   turnId,
 }: UseRealtimeVoiceOptions) {
@@ -33,6 +36,8 @@ export function useRealtimeVoice({
   const turnIdRef = useRef(turnId);
   const onWorkspaceRef = useRef(onWorkspace);
   const persistedMessagesRef = useRef(new Set<string>());
+  const persistQueueRef = useRef(Promise.resolve());
+  const announcedTurnRef = useRef<string | null>(null);
   const [status, setStatus] = useState<"idle" | "connecting" | "connected">(
     "idle",
   );
@@ -42,9 +47,29 @@ export function useRealtimeVoice({
     onWorkspaceRef.current = onWorkspace;
   }, [onWorkspace, turnId]);
 
+  useEffect(() => {
+    const client = clientRef.current;
+    if (status !== "connected" || !client || !turnId || !question) return;
+    if (announcedTurnRef.current === turnId) return;
+
+    client.sendEvent({ type: "response.cancel" });
+    client.sendEvent({
+      type: "response.create",
+      response: {
+        instructions: [
+          "Начни или продолжи интервью с текущего вопроса.",
+          `Текущий вопрос: ${question}`,
+          "Скажи только естественную короткую подводку и сам вопрос. Не переходи к следующему вопросу самостоятельно.",
+        ].join("\n"),
+      },
+    });
+    announcedTurnRef.current = turnId;
+  }, [question, status, turnId]);
+
   const stop = useCallback(() => {
     clientRef.current?.stop();
     clientRef.current = null;
+    announcedTurnRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.srcObject = null;
@@ -75,53 +100,40 @@ export function useRealtimeVoice({
             );
           });
         },
+        onConnected() {
+          setStatus("connected");
+        },
+        onDisconnected() {
+          clientRef.current = null;
+          announcedTurnRef.current = null;
+          setStatus("idle");
+          onError(
+            "Голосовое соединение прервано. Можно продолжить отвечать текстом или подключиться снова.",
+          );
+        },
         onEvent(event) {
-          if (!event || typeof event !== "object") return;
-          const payload = event as Record<string, unknown>;
-          const eventType =
-            typeof payload.type === "string" ? payload.type : "";
-          const transcript =
-            typeof payload.transcript === "string"
-              ? payload.transcript.trim()
-              : "";
-          const role = eventType.includes("input_audio_transcription")
-            ? "candidate"
-            : eventType.includes("output_audio_transcript")
-              ? "interviewer"
-              : null;
-          const messageKey =
-            typeof payload.item_id === "string"
-              ? payload.item_id
-              : typeof payload.response_id === "string"
-                ? payload.response_id
-                : "";
-          if (
-            !role ||
-            !transcript ||
-            !messageKey ||
-            persistedMessagesRef.current.has(messageKey)
-          ) {
-            return;
-          }
+          const transcript = getCompletedRealtimeTranscript(event);
+          if (!transcript || persistedMessagesRef.current.has(transcript.id)) return;
           const activeTurnId = turnIdRef.current;
           if (!activeTurnId) return;
-          persistedMessagesRef.current.add(messageKey);
-          void appendDialogue({
-            content: transcript,
-            role,
-            sessionId,
-            turnId: activeTurnId,
-          })
-            .unwrap()
+          persistedMessagesRef.current.add(transcript.id);
+          persistQueueRef.current = persistQueueRef.current
+            .then(() =>
+              appendDialogue({
+                content: transcript.text,
+                role: transcript.role,
+                sessionId,
+                turnId: activeTurnId,
+              }).unwrap(),
+            )
             .then(onWorkspaceRef.current)
             .catch((error) => {
-              persistedMessagesRef.current.delete(messageKey);
+              persistedMessagesRef.current.delete(transcript.id);
               onError(getApiErrorMessage(error));
             });
         },
       });
       clientRef.current = client;
-      setStatus("connected");
     } catch (error) {
       clientRef.current = null;
       setStatus("idle");
