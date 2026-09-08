@@ -5,6 +5,7 @@ import { API_BASE_URL } from "@/shared/api/baseApi";
 import type { DashboardOverview } from "@/entities/dashboard/model/types";
 import type {
   InterviewWorkspace,
+  SessionCreationRequest,
   SessionDraft,
 } from "@/entities/session/model/types";
 import type { AuthUser } from "@/entities/user/model/types";
@@ -83,9 +84,17 @@ export const handlers = [
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
   http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
   http.post(`${API_BASE_URL}/sessions`, async ({ request }) => {
-    const body = (await request.json()) as Partial<SessionDraft>;
+    const body = (await request.json()) as Partial<SessionCreationRequest>;
+    const vacancy =
+      "source" in body && body.source
+        ? body.source.type === "hh_url"
+          ? body.source.url
+          : body.source.type === "text"
+            ? (body.source.title ?? body.source.text)
+            : body.source.role
+        : (body as Partial<SessionDraft>).vacancy;
 
-    if (!body.vacancy?.trim()) {
+    if (!vacancy?.trim()) {
       return HttpResponse.json(
         { code: "invalid_session", message: "Укажите вакансию." },
         { status: 400 },
@@ -94,7 +103,7 @@ export const handlers = [
 
     const session = {
       id: "session_03",
-      title: body.vacancy.trim(),
+      title: vacancy.trim(),
       status: "active" as const,
       completedAt: null,
     };
@@ -201,6 +210,58 @@ export const handlers = [
       return new HttpResponse(stream, {
         headers: { "content-type": "text/event-stream" },
       });
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/realtime-sdp`,
+    ({ params }) => {
+      if (params.sessionId !== workspace.session.id) {
+        return HttpResponse.json(
+          { code: "session_not_found", message: "Сессия не найдена." },
+          { status: 404 },
+        );
+      }
+
+      return HttpResponse.json({ sdp: "mock-realtime-answer" });
+    },
+  ),
+  http.post(
+    `${API_BASE_URL}/sessions/:sessionId/dialogue`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        content?: string;
+        role?: "candidate" | "interviewer";
+        turnId?: string;
+      };
+      const currentTurn = workspace.currentTurn;
+      if (
+        params.sessionId !== workspace.session.id ||
+        !currentTurn ||
+        body.turnId !== currentTurn.id ||
+        !body.content?.trim() ||
+        !body.role
+      ) {
+        return HttpResponse.json(
+          { code: "invalid_dialogue", message: "Реплика не сохранена." },
+          { status: 400 },
+        );
+      }
+      workspace = {
+        ...workspace,
+        currentTurn: {
+          ...currentTurn,
+          messages: [
+            ...currentTurn.messages,
+            {
+              id: `message_${currentTurn.messages.length + 1}`,
+              role: body.role,
+              content: body.content.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      };
+      return HttpResponse.json(workspace);
     },
   ),
   http.post(

@@ -3,13 +3,17 @@ import { baseApi, toApiError } from "@/shared/api/baseApi";
 import { normalizeInterviewWorkspace } from "./interviewTransport";
 
 import {
+  type AppendDialogueRequest,
   interviewSessionSchema,
   interviewSessionsSchema,
   type InterviewSession,
   type InterviewWorkspace,
   type NextQuestionRequest,
+  realtimeSdpResponseSchema,
+  type RealtimeSdpRequest,
+  type RealtimeSdpResponse,
   type SaveAnswerRequest,
-  type SessionDraft,
+  type SessionCreationRequest,
 } from "../model/types";
 
 export const sessionApi = baseApi.injectEndpoints({
@@ -21,7 +25,7 @@ export const sessionApi = baseApi.injectEndpoints({
       transformErrorResponse: toApiError,
       providesTags: ["Session"],
     }),
-    createSession: builder.mutation<InterviewSession, SessionDraft>({
+    createSession: builder.mutation<InterviewSession, SessionCreationRequest>({
       query: (draft) => ({
         url: "sessions",
         method: "POST",
@@ -72,12 +76,39 @@ export const sessionApi = baseApi.injectEndpoints({
         "Dashboard",
       ],
     }),
+    exchangeRealtimeSdp: builder.mutation<
+      RealtimeSdpResponse,
+      RealtimeSdpRequest
+    >({
+      query: ({ sessionId, sdp }) => ({
+        url: `sessions/${sessionId}/realtime-sdp`,
+        method: "POST",
+        body: { sdp },
+      }),
+      transformResponse: (response: unknown) =>
+        realtimeSdpResponseSchema.parse(response),
+      transformErrorResponse: toApiError,
+    }),
+    appendDialogue: builder.mutation<InterviewWorkspace, AppendDialogueRequest>(
+      {
+        query: ({ sessionId, ...body }) => ({
+          url: `sessions/${sessionId}/dialogue`,
+          method: "POST",
+          body,
+        }),
+        transformResponse: normalizeInterviewWorkspace,
+        transformErrorResponse: toApiError,
+        invalidatesTags: ["Session"],
+      },
+    ),
   }),
 });
 
 export const {
   useCompleteSessionMutation,
+  useAppendDialogueMutation,
   useCreateSessionMutation,
+  useExchangeRealtimeSdpMutation,
   useGetInterviewWorkspaceQuery,
   useGetSessionsQuery,
   useNextQuestionMutation,

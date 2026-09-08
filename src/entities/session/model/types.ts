@@ -45,6 +45,19 @@ export type SaveAnswerRequest = {
 };
 export type NextQuestionRequest = { sessionId: string; turnId: string };
 
+export const realtimeSdpResponseSchema = z.object({
+  sdp: z.string().min(1),
+});
+
+export type RealtimeSdpRequest = { sessionId: string; sdp: string };
+export type RealtimeSdpResponse = z.infer<typeof realtimeSdpResponseSchema>;
+export type AppendDialogueRequest = {
+  content: string;
+  role: "candidate" | "interviewer";
+  sessionId: string;
+  turnId: string;
+};
+
 export const interviewFormatSchema = z.enum([
   "technical",
   "behavioral",
@@ -71,3 +84,20 @@ export const sessionDraftSchema = z.object({
 });
 
 export type SessionDraft = z.infer<typeof sessionDraftSchema>;
+
+export type AdvancedSessionCreationRequest = {
+  trainingMode: "candidate" | "interviewer";
+  source:
+    | { type: "hh_url"; url: string }
+    | { type: "text"; text: string; title?: string }
+    | { type: "profession"; role: string; specialization?: string };
+  resumeText?: string;
+  level: z.infer<typeof interviewLevelSchema>;
+  sessionGoal: "quick" | "standard" | "deep";
+  focus?: "hr_screening" | "professional" | "behavioral" | "salary_negotiation";
+  interviewerMode: "soft" | "neutral" | "strict";
+  customQuestionsText?: string;
+};
+
+export type SessionCreationRequest =
+  AdvancedSessionCreationRequest | SessionDraft;

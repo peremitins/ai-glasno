@@ -1,4 +1,6 @@
-type Draft = {
+import type { CreationDraft as Draft } from "./creationRequest";
+
+type LegacyDraft = {
   vacancy: string;
   profile: string;
   format: "technical" | "behavioral" | "mixed";
@@ -61,15 +63,15 @@ export class InterviewCreationService {
     },
   ) {}
 
-  async create(params: { owner: Owner; draft: Draft }) {
+  async create(params: { owner: Owner; draft: LegacyDraft & Draft }) {
     const vacancy = params.draft.vacancy.trim();
     const role = vacancy.split("\n")[0]?.slice(0, 160).trim() || "специалист";
     const plan = questionPlan(role, params.draft.questionsCount);
     const session = await this.repository.createSession({
       anonymousSessionId: params.owner.anonymousSessionId,
       userId: params.owner.userId ?? null,
-      trainingMode: "candidate",
-      source: "text",
+      trainingMode: params.draft.trainingMode ?? "candidate",
+      source: params.draft.sourceType ?? "text",
       vacancyTitle: role,
       vacancyRaw: vacancy,
       resumeRaw: params.draft.profile.trim(),
@@ -77,7 +79,7 @@ export class InterviewCreationService {
       level: params.draft.level,
       questionCount: params.draft.questionsCount,
       language: "ru",
-      interviewerMode: "neutral",
+      interviewerMode: params.draft.interviewerMode ?? "neutral",
       interviewerAvatarId: "neutral-pro",
       status: "running",
       metadata: {
@@ -85,6 +87,9 @@ export class InterviewCreationService {
         format: params.draft.format,
         durationMinutes: params.draft.durationMinutes,
         includeHints: params.draft.includeHints,
+        sessionGoal: params.draft.sessionGoal ?? "standard",
+        focus: params.draft.focus ?? null,
+        customQuestionsText: params.draft.customQuestionsText ?? null,
       },
     });
     const firstQuestion = plan[0]!;

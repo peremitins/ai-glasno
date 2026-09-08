@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { H3Event } from "h3";
-import { getCookie, setCookie } from "h3";
+import { getCookie, getRequestProtocol, setCookie } from "h3";
 
 import { getRuntimeConfig } from "../config/runtimeConfig";
 import { apiError } from "./apiError";
@@ -27,6 +27,10 @@ function isValidSignature(id: string, signature: string, secret: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+export function shouldUseSecureCookie(protocol: string) {
+  return protocol === "https";
+}
+
 export function getOrCreateAnonymousSession(event: H3Event): SessionContext {
   const secret = getRuntimeConfig().server.sessionSecret;
   const rawCookie = getCookie(event, COOKIE_NAME);
@@ -48,7 +52,9 @@ export function getOrCreateAnonymousSession(event: H3Event): SessionContext {
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE_SECONDS,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(
+      getRequestProtocol(event, { xForwardedProto: true }),
+    ),
   });
 
   return { id, isAnonymous: true, fresh: true };

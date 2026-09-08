@@ -84,7 +84,10 @@ export function getApiErrorMessage(error: unknown) {
 
 export const baseApi = createApi({
   reducerPath: "api",
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_BASE_URL,
+    credentials: "include",
+  }),
   tagTypes,
   endpoints: () => ({}),
 });

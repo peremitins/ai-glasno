@@ -73,4 +73,26 @@ describe("NewInterviewPage", () => {
       "/interview/session_03",
     );
   });
+
+  it("создаёт сессию по ссылке на вакансию", async () => {
+    const user = userEvent.setup();
+
+    renderNewInterviewPage();
+    await user.click(screen.getByRole("tab", { name: "По ссылке" }));
+    await user.type(
+      screen.getByLabelText("Ссылка на вакансию"),
+      "https://hh.ru/vacancy/123456",
+    );
+    await user.type(
+      screen.getByLabelText("Профиль кандидата"),
+      "Разрабатываю приложения на React и TypeScript.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Начать репетицию" }),
+    );
+
+    expect(await screen.findByTestId("location")).toHaveTextContent(
+      "/interview/session_03",
+    );
+  });
 });

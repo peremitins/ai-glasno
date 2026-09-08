@@ -1,4 +1,4 @@
-import { getRouterParam, readBody, setHeader } from "h3";
+import { defineEventHandler, getRouterParam, readBody, setHeader } from "h3";
 import { z } from "zod";
 
 import { InterviewReplyService } from "../../../../application/interview/interviewReplyService";

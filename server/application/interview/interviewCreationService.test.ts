@@ -33,4 +33,42 @@ describe("InterviewCreationService", () => {
     expect(state.currentTurn?.question).toContain("Frontend-разработчик");
     expect(created).toHaveLength(2);
   });
+
+  it("сохраняет настройки расширенного сценария в сессии", async () => {
+    const created: Array<Record<string, unknown>> = [];
+    const service = new InterviewCreationService({
+      createSession: async (input) => {
+        created.push(input);
+        return { id: "session-2", ...input };
+      },
+      createTurn: async (input) => {
+        created.push(input);
+      },
+    });
+
+    await service.create({
+      owner: { anonymousSessionId: "anonymous-1", userId: null },
+      draft: {
+        vacancy: "Senior Frontend-разработчик",
+        profile: "Создаю интерфейсы и развиваю архитектуру клиентских приложений.",
+        format: "technical",
+        level: "senior",
+        questionsCount: 10,
+        durationMinutes: 45,
+        includeHints: true,
+        trainingMode: "interviewer",
+        sourceType: "profession",
+        sessionGoal: "standard",
+        interviewerMode: "strict",
+        focus: "professional",
+      },
+    });
+
+    expect(created[0]).toMatchObject({
+      trainingMode: "interviewer",
+      source: "profession",
+      interviewerMode: "strict",
+      metadata: { sessionGoal: "standard", focus: "professional" },
+    });
+  });
 });

@@ -1,15 +1,18 @@
 import {
-  Camera,
+  AudioLines,
   CameraOff,
   Expand,
-  Lightbulb,
+  LogOut,
   MessageCircle,
+  Mic,
+  MicOff,
   Minimize,
   Send,
-  Timer,
+  Video,
   X,
+  Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
@@ -26,7 +29,13 @@ import {
   setAnswerDraft,
   toggleHints,
 } from "@/features/interview/model/interviewSlice";
+import { useRealtimeVoice } from "@/features/realtime-voice/model/useRealtimeVoice";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
+import { getBrowserCapabilities } from "@/shared/lib/browserCapabilities";
+import {
+  getSpeechRecognitionConstructor,
+  type SpeechRecognitionInstance,
+} from "@/shared/lib/speechRecognition";
 
 import "./InterviewPage.css";
 
@@ -45,28 +54,175 @@ export function InterviewPage() {
   const [streamingReply, setStreamingReply] = useState("");
   const [pendingCandidateMessage, setPendingCandidateMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isDictating, setIsDictating] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const speechRecognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const answerDraftRef = useRef(answerDraft);
+  const cameraPreviewRef = useRef<HTMLVideoElement>(null);
+  const realtimeAudioRef = useRef<HTMLAudioElement>(null);
+  const realtimeVoice = useRealtimeVoice({
+    audioRef: realtimeAudioRef,
+    onError: setActionError,
+    onWorkspace: (workspace) => {
+      dispatch(
+        sessionApi.util.updateQueryData(
+          "getInterviewWorkspace",
+          id,
+          () => workspace,
+        ),
+      );
+    },
+    sessionId: id,
+    turnId: data?.currentTurn?.id ?? null,
+  });
+  const capabilities = getBrowserCapabilities();
+  const isBusy =
+    nextQuestionState.isLoading ||
+    completeSessionState.isLoading ||
+    isStreaming ||
+    realtimeVoice.isBusy;
+
+  useEffect(
+    () => () => {
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      speechRecognitionRef.current?.stop();
+    },
+    [],
+  );
+
+  useEffect(() => {
+    answerDraftRef.current = answerDraft;
+  }, [answerDraft]);
+
+  useEffect(() => {
+    if (isBusy && speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+    }
+  }, [isBusy]);
+
+  useEffect(() => {
+    const preview = cameraPreviewRef.current;
+    const stream = cameraStreamRef.current;
+    if (!cameraEnabled || !preview || !stream) return;
+
+    preview.srcObject = stream;
+    const playback = preview.play();
+    if (playback) void playback.catch(() => {});
+  }, [cameraEnabled]);
+
+  function toggleDictation() {
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+      setActionError(
+        "Голосовой ввод не поддерживается. Продолжите отвечать текстом.",
+      );
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ru-RU";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .slice(event.resultIndex)
+        .filter((result) => result.isFinal)
+        .map((result) => result[0].transcript.trim())
+        .filter(Boolean)
+        .join(" ");
+      if (!transcript) return;
+      const separator = answerDraftRef.current.trim() ? " " : "";
+      dispatch(
+        setAnswerDraft(`${answerDraftRef.current}${separator}${transcript}`),
+      );
+    };
+    recognition.onerror = (event) => {
+      setActionError(
+        event.error === "not-allowed"
+          ? "Нет доступа к микрофону. Разрешите его в настройках браузера или продолжите текстом."
+          : "Не удалось распознать речь. Можно продолжить в текстовом режиме.",
+      );
+    };
+    recognition.onend = () => {
+      speechRecognitionRef.current = null;
+      setIsDictating(false);
+    };
+
+    try {
+      recognition.start();
+      speechRecognitionRef.current = recognition;
+      setActionError(null);
+      setIsDictating(true);
+    } catch {
+      setActionError("Не удалось включить голосовой ввод. Продолжите текстом.");
+    }
+  }
+
+  async function toggleCamera() {
+    if (cameraEnabled) {
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+      setCameraEnabled(false);
+      return;
+    }
+
+    if (!capabilities.camera) {
+      setActionError("Камера не поддерживается в этом браузере.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          height: { ideal: 540 },
+          width: { ideal: 960 },
+        },
+      });
+      cameraStreamRef.current = stream;
+      setActionError(null);
+      setCameraEnabled(true);
+    } catch {
+      setActionError(
+        "Не удалось получить доступ к камере. Можно продолжить в текстовом режиме.",
+      );
+    }
+  }
+
+  function toggleFullscreen() {
+    setFullscreen((currentValue) => !currentValue);
+    setActionError(null);
+  }
 
   if (isLoading) return <SessionLoading />;
 
   if (error || !data) {
+    const isNotFound = isApiErrorWithStatus(error, 404);
     return (
       <section className="session-state glass-frame">
         <p className="session-eyebrow">Интервью</p>
-        <h1>Сессия не найдена</h1>
-        <p>Проверьте ссылку или выберите другую сессию в истории.</p>
+        <h1>
+          {isNotFound ? "Сессия не найдена" : "Не удалось открыть сессию"}
+        </h1>
+        <p>
+          {isNotFound
+            ? "Проверьте ссылку или выберите другую сессию в истории."
+            : getApiErrorMessage(error)}
+        </p>
       </section>
     );
   }
 
   const { currentTurn, session, totalQuestions } = data;
   const isCompleted = session.status === "completed" || !currentTurn;
-  const isBusy =
-    nextQuestionState.isLoading ||
-    completeSessionState.isLoading ||
-    isStreaming;
 
   async function handleSendMessage() {
     const message = answerDraft.trim();
@@ -146,9 +302,12 @@ export function InterviewPage() {
 
   const progress = Math.round((currentTurn.index / totalQuestions) * 100);
   return (
-    <section
-      className={`interview-workspace ${fullscreen ? "interview-workspace--fullscreen" : ""}`}
-    >
+    <section className="interview-workspace">
+      <audio
+        aria-hidden="true"
+        className="realtime-audio"
+        ref={realtimeAudioRef}
+      />
       <header className="session-header glass-frame glass-frame--soft">
         <div>
           <p className="session-eyebrow">
@@ -156,180 +315,87 @@ export function InterviewPage() {
           </p>
           <h1>{session.title}</h1>
         </div>
-        <div className="session-timer" aria-label="Текстовый режим">
-          <Timer aria-hidden="true" />
-          <span>Текстовый режим</span>
-        </div>
       </header>
       <div className="session-progress" aria-label={`Прогресс ${progress}%`}>
         <span style={{ width: `${progress}%` }} />
       </div>
-      <div className="interview-video-stage">
-        <section className="video-tile video-tile--interviewer">
-          <div className="video-avatar" aria-hidden="true">
-            ИИ
-          </div>
-          <span>Интервьюер</span>
-          <small>На связи</small>
-        </section>
-        <section
-          className={`video-tile video-tile--candidate ${cameraEnabled ? "video-tile--camera" : ""}`}
-        >
-          {cameraEnabled ? (
-            <Camera aria-hidden="true" />
-          ) : (
-            <CameraOff aria-hidden="true" />
-          )}
-          <span>Вы</span>
-          <small>
-            {cameraEnabled ? "Камера включена" : "Камера выключена"}
-          </small>
-        </section>
-      </div>
-      <div className="interview-grid">
-        <main className="question-panel glass-frame">
-          <p className="session-eyebrow">Текущий вопрос</p>
-          <h2>{currentTurn.question}</h2>
-          <div className="interview-dialogue" aria-live="polite">
-            {currentTurn.messages.map((message) => (
-              <article
-                className={`dialogue-message dialogue-message--${message.role}`}
-                key={message.id}
-              >
-                <span>
-                  {message.role === "interviewer" ? "Интервьюер" : "Вы"}
-                </span>
-                <p>{message.content}</p>
-              </article>
-            ))}
-            {pendingCandidateMessage && (
-              <article className="dialogue-message dialogue-message--candidate">
-                <span>Вы</span>
-                <p>{pendingCandidateMessage}</p>
-              </article>
-            )}
-            {streamingReply && (
-              <article
-                className="dialogue-message dialogue-message--interviewer"
-                data-testid="streaming-reply"
-              >
-                <span>Интервьюер</span>
-                <p>{streamingReply}</p>
-              </article>
-            )}
-          </div>
-          <label className="answer-composer" htmlFor="interview-answer">
-            <span>Ваш ответ</span>
-            <textarea
-              disabled={isBusy}
-              id="interview-answer"
-              onChange={(event) => dispatch(setAnswerDraft(event.target.value))}
-              placeholder="Сформулируйте ответ и приведите пример из практики"
-              rows={5}
-              value={answerDraft}
-            />
-          </label>
-          {actionError && (
-            <p className="session-error" role="alert">
-              {actionError}
-            </p>
-          )}
-          {notice && (
-            <p className="session-notice" role="status">
-              {notice}
-            </p>
-          )}
-          <div className="session-actions">
-            <button
-              className="session-button session-button--secondary"
-              disabled={isBusy}
-              onClick={() => dispatch(toggleHints())}
-              type="button"
-            >
-              <Lightbulb aria-hidden="true" />
-              {hintsOpen ? "Скрыть подсказки" : "Показать подсказки"}
-            </button>
-            <button
-              className="session-button session-button--primary"
-              disabled={isBusy || answerDraft.trim().length < 2}
-              onClick={handleSendMessage}
-              type="button"
-            >
-              <Send aria-hidden="true" />
-              Отправить ответ
-            </button>
-          </div>
-        </main>
-        <aside className="session-side-panel">
-          {chatOpen && (
-            <section className="chat-card glass-frame" aria-label="Чат">
-              <div className="hint-card-header">
-                <h2>Чат</h2>
-                <button
-                  aria-label="Закрыть чат"
-                  onClick={() => setChatOpen(false)}
-                  type="button"
-                >
-                  <X aria-hidden="true" />
-                </button>
-              </div>
-              <p>
-                Обсуждение вопроса и ответы интервьюера отображаются в основной
-                области.
-              </p>
-            </section>
-          )}
-          {hintsOpen && (
-            <section
-              className="hint-card glass-frame"
-              aria-label="Подсказки к вопросу"
-            >
-              <div className="hint-card-header">
-                <div>
-                  <p className="session-eyebrow">Подсказка</p>
-                  <h2>На что обратить внимание</h2>
+      <section className={`call ${fullscreen ? "call--fs" : ""}`}>
+        <div className="call-stage">
+          <div className="videos">
+            <section className="vtile vtile--peer">
+              <div className="interviewer interviewer--photo">
+                <img
+                  alt="Нейтральный профиль интервьюера"
+                  className="interviewer-photo"
+                  src="/interviewers/male-neutral.webp"
+                />
+                <div className="photo-shade" aria-hidden="true" />
+                <div className="interviewer-meta">
+                  <p>Интервьюер</p>
+                  <h2>Нейтральный профиль</h2>
+                  <span>Слушает</span>
                 </div>
-                <button
-                  aria-label="Скрыть подсказки"
-                  onClick={() => dispatch(closeHints())}
-                  type="button"
-                >
-                  <X aria-hidden="true" />
-                </button>
               </div>
-              <p>
-                {currentTurn.hint ??
-                  "Сформулируйте ответ последовательно и подкрепите его примером."}
-              </p>
             </section>
-          )}
-          <section className="session-controls glass-frame glass-frame--soft">
-            <p className="session-eyebrow">Управление сессией</p>
+            <section className="vtile vtile--self">
+              {cameraEnabled ? (
+                <video
+                  aria-label="Локальное видео"
+                  autoPlay
+                  className="camera-video"
+                  muted
+                  playsInline
+                  ref={cameraPreviewRef}
+                />
+              ) : (
+                <div className="camera-placeholder">
+                  <CameraOff aria-hidden="true" />
+                </div>
+              )}
+              <span className="vtile-name">Вы</span>
+              <span className="camera-status">
+                {cameraEnabled ? "Камера включена" : "Камера выключена"}
+              </span>
+            </section>
+          </div>
+          <main className="now-question">
+            <div className="now-question-meta">
+              <span className="badge">Вопрос {currentTurn.index}</span>
+            </div>
+            <p>{currentTurn.question}</p>
+          </main>
+          <section className="dock glass-frame" aria-label="Управление сессией">
+            <button
+              aria-label={
+                cameraEnabled ? "Выключить камеру" : "Включить камеру"
+              }
+              className={`dock-btn ${cameraEnabled ? "dock-btn--active" : "dock-btn--off"}`}
+              disabled={isBusy}
+              onClick={toggleCamera}
+              type="button"
+            >
+              <Video aria-hidden="true" />
+              <span className="dock-label">Камера</span>
+            </button>
             <button
               aria-label={chatOpen ? "Скрыть чат" : "Открыть чат"}
-              className={`session-button session-button--secondary ${chatOpen ? "session-button--active" : ""}`}
+              className={`dock-btn ${chatOpen ? "dock-btn--active" : ""}`}
               disabled={isBusy}
               onClick={() => setChatOpen((value) => !value)}
               type="button"
             >
               <MessageCircle aria-hidden="true" />
-              {chatOpen ? "Скрыть чат" : "Открыть чат"}
+              <span className="dock-label">Чат</span>
             </button>
             <button
-              aria-label={
-                cameraEnabled ? "Выключить камеру" : "Включить камеру"
-              }
-              className="session-button session-button--secondary"
+              aria-label={hintsOpen ? "Скрыть подсказки" : "Открыть подсказки"}
+              className={`dock-btn ${hintsOpen ? "dock-btn--active" : ""}`}
               disabled={isBusy}
-              onClick={() => setCameraEnabled((value) => !value)}
+              onClick={() => dispatch(toggleHints())}
               type="button"
             >
-              {cameraEnabled ? (
-                <Camera aria-hidden="true" />
-              ) : (
-                <CameraOff aria-hidden="true" />
-              )}
-              Камера
+              <Zap aria-hidden="true" />
+              <span className="dock-label">Подсказки</span>
             </button>
             <button
               aria-label={
@@ -337,9 +403,9 @@ export function InterviewPage() {
                   ? "Выйти из полноэкранного режима"
                   : "Открыть полноэкранный режим"
               }
-              className="session-button session-button--secondary"
+              className={`dock-btn ${fullscreen ? "dock-btn--active" : ""}`}
               disabled={isBusy}
-              onClick={() => setFullscreen((value) => !value)}
+              onClick={toggleFullscreen}
               type="button"
             >
               {fullscreen ? (
@@ -347,28 +413,184 @@ export function InterviewPage() {
               ) : (
                 <Expand aria-hidden="true" />
               )}
-              Экран
+              <span className="dock-label">Экран</span>
             </button>
             <button
-              className="session-button session-button--primary"
-              disabled={isBusy}
-              onClick={handleNextQuestion}
-              type="button"
-            >
-              Следующий вопрос
-            </button>
-            <button
-              className="session-button session-button--danger"
+              aria-label="Завершить сессию"
+              className="dock-btn dock-btn--end"
               disabled={isBusy}
               onClick={handleComplete}
               type="button"
             >
-              Завершить сессию
+              <LogOut aria-hidden="true" />
+              <span className="dock-label">Завершить</span>
             </button>
           </section>
-        </aside>
-      </div>
+        </div>
+        {(chatOpen || hintsOpen) && (
+          <div className="call-side">
+            {chatOpen && (
+              <aside className="side-panel glass-frame" aria-label="Чат">
+                <header className="side-head side-head--chat">
+                  <h2>Чат</h2>
+                  <button
+                    className="side-close"
+                    aria-label="Закрыть чат"
+                    onClick={() => setChatOpen(false)}
+                    type="button"
+                  >
+                    <X aria-hidden="true" />
+                  </button>
+                </header>
+                <ol className="chat-feed" aria-live="polite">
+                  {currentTurn.messages.map((message) => (
+                    <li
+                      className={`chat-message chat-message--${message.role}`}
+                      key={message.id}
+                    >
+                      <p>{message.content}</p>
+                    </li>
+                  ))}
+                  {pendingCandidateMessage && (
+                    <li className="chat-message chat-message--candidate">
+                      <p>{pendingCandidateMessage}</p>
+                    </li>
+                  )}
+                  {streamingReply && (
+                    <li
+                      className="chat-message chat-message--interviewer"
+                      data-testid="streaming-reply"
+                    >
+                      <p>{streamingReply}</p>
+                    </li>
+                  )}
+                </ol>
+                <button
+                  className="next-btn"
+                  disabled={isBusy}
+                  onClick={handleNextQuestion}
+                  type="button"
+                >
+                  Следующий вопрос
+                </button>
+                <div className="composer">
+                  <textarea
+                    aria-label="Ваш ответ"
+                    disabled={isBusy}
+                    id="interview-answer"
+                    onChange={(event) =>
+                      dispatch(setAnswerDraft(event.target.value))
+                    }
+                    placeholder="Ваш ответ или вопрос интервьюеру..."
+                    rows={3}
+                    value={answerDraft}
+                  />
+                  {actionError && (
+                    <p className="session-error" role="alert">
+                      {actionError}
+                    </p>
+                  )}
+                  {notice && (
+                    <p className="session-notice" role="status">
+                      {notice}
+                    </p>
+                  )}
+                  <div className="composer-actions">
+                    <div className="composer-tools">
+                      <button
+                        aria-label={
+                          isDictating
+                            ? "Остановить голосовой ввод"
+                            : "Начать голосовой ввод"
+                        }
+                        aria-pressed={isDictating}
+                        className={`voice-input ${isDictating ? "voice-input--active" : ""}`}
+                        disabled={isBusy || realtimeVoice.isActive}
+                        onClick={toggleDictation}
+                        type="button"
+                      >
+                        {isDictating ? (
+                          <MicOff aria-hidden="true" />
+                        ) : (
+                          <Mic aria-hidden="true" />
+                        )}
+                      </button>
+                      <button
+                        aria-label={
+                          realtimeVoice.isActive
+                            ? "Остановить разговор в реальном времени"
+                            : "Начать разговор в реальном времени"
+                        }
+                        aria-pressed={realtimeVoice.isActive}
+                        className={`rt-icon ${realtimeVoice.isActive ? "rt-icon--active" : ""}`}
+                        disabled={
+                          nextQuestionState.isLoading ||
+                          completeSessionState.isLoading ||
+                          isStreaming ||
+                          realtimeVoice.isBusy
+                        }
+                        onClick={() => void realtimeVoice.toggle()}
+                        type="button"
+                      >
+                        <AudioLines aria-hidden="true" />
+                        <span>
+                          {realtimeVoice.isActive ? "Остановить" : "Говорить"}
+                        </span>
+                        {!realtimeVoice.isActive && <small>LIVE</small>}
+                      </button>
+                    </div>
+                    <button
+                      aria-label="Отправить ответ"
+                      className="send-btn"
+                      disabled={
+                        isBusy ||
+                        realtimeVoice.isActive ||
+                        answerDraft.trim().length < 2
+                      }
+                      onClick={handleSendMessage}
+                      type="button"
+                    >
+                      <Send aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </aside>
+            )}
+            {hintsOpen && (
+              <section
+                className="side-panel hints-pane glass-frame"
+                aria-label="Подсказки к вопросу"
+              >
+                <header className="side-head">
+                  <h2>Подсказки</h2>
+                  <button
+                    className="side-close"
+                    aria-label="Скрыть подсказки"
+                    onClick={() => dispatch(closeHints())}
+                    type="button"
+                  >
+                    <X aria-hidden="true" />
+                  </button>
+                </header>
+                <p className="hint-disclosure">
+                  {currentTurn.hint ??
+                    "Сформулируйте ответ последовательно и подкрепите его примером."}
+                </p>
+              </section>
+            )}
+          </div>
+        )}
+      </section>
     </section>
+  );
+}
+
+function isApiErrorWithStatus(error: unknown, status: number) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    (error as { status?: unknown }).status === status
   );
 }
 

@@ -13,11 +13,12 @@ export default defineApiRoute(async (event) => {
 
   const owner = requireSession(event);
   const repository = new InterviewRepository();
-  const session = assertOwnedInterviewSession(
-    await repository.findSessionById(id),
-    owner,
-  );
-  const turns = await repository.listTurns(session.id);
+  const session = await repository.findSessionById(id);
+  const ownedSession = assertOwnedInterviewSession(session, {
+    anonymousSessionId: owner.id,
+    userId: owner.userId,
+  });
+  const turns = await repository.listTurns(ownedSession.id);
 
-  return toInterviewState(session, turns);
+  return toInterviewState(ownedSession, turns);
 });

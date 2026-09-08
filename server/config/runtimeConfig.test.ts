@@ -14,6 +14,7 @@ describe("readRuntimeConfig", () => {
     });
 
     expect(config.server.openAi.apiKey).toBe("secret-api-key");
+    expect(config.server.openAi.realtimeModel).toBe("gpt-realtime-mini");
     expect(config.server.databaseUrl).toContain("postgres://");
     expect(config.public).toEqual({ apiBase: "/api" });
     expect(JSON.stringify(config.public)).not.toContain("secret");
