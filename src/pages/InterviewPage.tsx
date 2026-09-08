@@ -189,6 +189,16 @@ export function InterviewPage() {
         },
       });
       cameraStreamRef.current = stream;
+      stream.getVideoTracks().forEach((track) => {
+        track.addEventListener("ended", () => {
+          if (cameraStreamRef.current !== stream) return;
+          cameraStreamRef.current = null;
+          setCameraEnabled(false);
+          setActionError(
+            "Поток камеры остановлен. При необходимости включите камеру снова.",
+          );
+        });
+      });
       setActionError(null);
       setCameraEnabled(true);
     } catch {
