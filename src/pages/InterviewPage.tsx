@@ -24,9 +24,9 @@ import {
 } from "@/entities/session/api/sessionApi";
 import { streamInterviewReply } from "@/entities/session/api/interviewTransport";
 import {
-  clearAnswerDraft,
+  clearSessionAnswerDraft,
   closeHints,
-  setAnswerDraft,
+  setSessionAnswerDraft,
   toggleHints,
 } from "@/features/interview/model/interviewSlice";
 import { useRealtimeVoice } from "@/features/realtime-voice/model/useRealtimeVoice";
@@ -42,7 +42,9 @@ import "./InterviewPage.css";
 export function InterviewPage() {
   const { id = "" } = useParams();
   const dispatch = useAppDispatch();
-  const answerDraft = useAppSelector((state) => state.interview.answerDraft);
+  const answerDraft = useAppSelector(
+    (state) => state.interview.answerDrafts[id] ?? "",
+  );
   const hintsOpen = useAppSelector((state) => state.interview.hintsOpen);
   const { data, error, isLoading } = useGetInterviewWorkspaceQuery(id, {
     skip: !id,
@@ -142,7 +144,10 @@ export function InterviewPage() {
       if (!transcript) return;
       const separator = answerDraftRef.current.trim() ? " " : "";
       dispatch(
-        setAnswerDraft(`${answerDraftRef.current}${separator}${transcript}`),
+        setSessionAnswerDraft({
+          sessionId: id,
+          value: `${answerDraftRef.current}${separator}${transcript}`,
+        }),
       );
     };
     recognition.onerror = (event) => {
@@ -245,7 +250,7 @@ export function InterviewPage() {
     setNotice(null);
     setStreamingReply("");
     setPendingCandidateMessage(message);
-    dispatch(clearAnswerDraft());
+    dispatch(clearSessionAnswerDraft(id));
     setIsStreaming(true);
     try {
       const workspace = await streamInterviewReply(
@@ -266,7 +271,7 @@ export function InterviewPage() {
       setPendingCandidateMessage("");
       setStreamingReply("");
     } catch (requestError) {
-      dispatch(setAnswerDraft(message));
+      dispatch(setSessionAnswerDraft({ sessionId: id, value: message }));
       setPendingCandidateMessage("");
       setStreamingReply("");
       setActionError(getApiErrorMessage(requestError));
@@ -490,7 +495,12 @@ export function InterviewPage() {
                     disabled={isBusy}
                     id="interview-answer"
                     onChange={(event) =>
-                      dispatch(setAnswerDraft(event.target.value))
+                      dispatch(
+                        setSessionAnswerDraft({
+                          sessionId: id,
+                          value: event.target.value,
+                        }),
+                      )
                     }
                     placeholder="Ваш ответ или вопрос интервьюеру..."
                     rows={3}
