@@ -56,6 +56,16 @@ describe("InterviewPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("помечает рабочую область классом с открытыми боковыми панелями", async () => {
+    const user = userEvent.setup();
+    renderInterviewPage();
+
+    await screen.findByRole("heading", { name: "Практика TypeScript" });
+    await user.click(screen.getByRole("button", { name: "Открыть подсказки" }));
+
+    expect(document.querySelector(".call--side")).toBeInTheDocument();
+  });
+
   it("показывает историю и поле ответа внутри бокового чата", async () => {
     renderInterviewPage();
 
