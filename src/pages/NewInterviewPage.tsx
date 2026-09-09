@@ -6,11 +6,11 @@ import {
   Plus,
   Sparkles,
   Upload,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { Popover } from "radix-ui";
 import { useAppDispatch, useAppSelector } from "@/app/hooks";
 import {
   useCreateSessionMutation,
@@ -27,6 +27,7 @@ import {
   saveDraft,
 } from "@/features/interview/model/interviewSlice";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
+import { VoiceTextarea } from "@/shared/ui/VoiceTextarea";
 import "./NewInterviewPage.css";
 
 type TrainingMode = "candidate" | "interviewer";
@@ -97,7 +98,10 @@ export function NewInterviewPage() {
     "glasno" | "custom" | "mixed" | "free"
   >("mixed");
   const [customQuestions, setCustomQuestions] = useState("");
+  const [questionsFileName, setQuestionsFileName] = useState("");
+  const [questionsFileText, setQuestionsFileText] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
+  const [resumeExtractedText, setResumeExtractedText] = useState("");
   const [preparing, setPreparing] = useState(false);
   const [createSession, createState] = useCreateSessionMutation();
   const [extractQuestions, extractQuestionsState] =
@@ -109,6 +113,9 @@ export function NewInterviewPage() {
   });
   const values = useWatch({ control: form.control });
   const savedDraftRef = useRef(draft);
+  const rolePickerRef = useRef<HTMLDivElement>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const questionsInputRef = useRef<HTMLInputElement>(null);
   const matchingRole = useMemo(
     () =>
       roles.find(
@@ -134,6 +141,22 @@ export function NewInterviewPage() {
     }
   }, [dispatch, values]);
 
+  useEffect(() => {
+    if (!isRoleListOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !rolePickerRef.current?.contains(event.target)
+      ) {
+        setIsRoleListOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isRoleListOpen]);
+
   function toggleTag(tag: string) {
     setSelectedTags((current) =>
       current.includes(tag)
@@ -153,25 +176,42 @@ export function NewInterviewPage() {
   async function handleResumeFile(file: File | undefined) {
     if (!file) return;
     setResumeFileName(file.name);
+    setResumeExtractedText("");
     try {
       const result = await extractResume(file).unwrap();
-      form.setValue("profile", result.text.slice(0, 15_000), {
-        shouldDirty: true,
-      });
+      setResumeFileName(result.fileName || file.name);
+      setResumeExtractedText(result.text.slice(0, 15_000));
     } catch (error) {
+      setResumeFileName("");
       form.setError("root", { message: getApiErrorMessage(error) });
+    } finally {
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
     }
+  }
+
+  function clearResumeFile() {
+    setResumeFileName("");
+    setResumeExtractedText("");
+    if (resumeInputRef.current) resumeInputRef.current.value = "";
   }
 
   async function handleQuestionsFile(file: File | undefined) {
     if (!file) return;
+    setQuestionsFileName(file.name);
+    setQuestionsFileText("");
     try {
       const result = await extractQuestions(file).unwrap();
+      const text = result.text.trim();
+      setQuestionsFileName(result.fileName || file.name);
+      setQuestionsFileText(text);
       setCustomQuestions((current) =>
-        [current.trim(), result.text.trim()].filter(Boolean).join("\n\n"),
+        [current.trim(), text].filter(Boolean).join("\n\n"),
       );
     } catch (error) {
+      setQuestionsFileName("");
       form.setError("root", { message: getApiErrorMessage(error) });
+    } finally {
+      if (questionsInputRef.current) questionsInputRef.current.value = "";
     }
   }
 
@@ -189,7 +229,17 @@ export function NewInterviewPage() {
     const request: AdvancedSessionCreationRequest = {
       trainingMode,
       source,
-      resumeText: data.profile.trim() || undefined,
+      resumeText: [
+        resumeExtractedText.trim()
+          ? `Резюме из файла «${resumeFileName}»:\n${resumeExtractedText.trim()}`
+          : "",
+        data.profile.trim()
+          ? `Дополнительно от кандидата:\n${data.profile.trim()}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+        .slice(0, 15_000) || undefined,
       level: data.level,
       sessionGoal: goal,
       focus: focus ?? undefined,
@@ -284,38 +334,36 @@ export function NewInterviewPage() {
             ) : (
               <>
                 <Field label="Профессия или роль">
-                  <Popover.Root
-                    onOpenChange={setIsRoleListOpen}
-                    open={isRoleListOpen}
+                  <div
+                    className="role-combobox"
+                    ref={rolePickerRef}
                   >
-                    <Popover.Anchor asChild>
-                      <input
-                        aria-autocomplete="list"
-                        aria-expanded={isRoleListOpen}
-                        onChange={(event) => {
-                          setRole(event.target.value);
-                          setIsRoleListOpen(true);
-                        }}
-                        onFocus={() => setIsRoleListOpen(true)}
-                        placeholder="Например, Frontend-разработчик"
-                        value={role}
-                      />
-                    </Popover.Anchor>
-                    <Popover.Portal>
-                      <Popover.Content
-                        align="start"
-                        className="role-combobox"
-                        onOpenAutoFocus={(event) => event.preventDefault()}
-                        sideOffset={8}
-                      >
+                    <input
+                      aria-autocomplete="list"
+                      aria-controls="role-options"
+                      aria-expanded={isRoleListOpen}
+                      onChange={(event) => {
+                        setRole(event.target.value);
+                        setIsRoleListOpen(true);
+                      }}
+                      onFocus={() => setIsRoleListOpen(true)}
+                      placeholder="Например, Frontend-разработчик"
+                      role="combobox"
+                      value={role}
+                    />
+                    {isRoleListOpen && (
+                      <div className="role-menu" id="role-options" role="listbox">
                         {suggestedRoles.length ? (
                           suggestedRoles.map((item) => (
                             <button
+                              aria-selected={role === item.name}
                               key={item.name}
+                              onMouseDown={(event) => event.preventDefault()}
                               onClick={() => {
                                 setRole(item.name);
                                 setIsRoleListOpen(false);
                               }}
+                              role="option"
                               type="button"
                             >
                               <strong>{item.name}</strong>
@@ -325,9 +373,9 @@ export function NewInterviewPage() {
                         ) : (
                           <p>Продолжите вводить название роли.</p>
                         )}
-                      </Popover.Content>
-                    </Popover.Portal>
-                  </Popover.Root>
+                      </div>
+                    )}
+                  </div>
                 </Field>
                 {role.trim() && (
                   <div className="tag-field">
@@ -410,23 +458,64 @@ export function NewInterviewPage() {
                 onChange={setPersona}
               />
             )}
-            <label className="file-button">
-              <Upload aria-hidden="true" /> Загрузить резюме
+            <div className="file-upload file-upload--compact">
               <input
                 accept=".txt,.md,.pdf,.doc,.docx"
                 aria-label="Загрузить резюме"
-                hidden
+                className="file-input"
+                disabled={extractResumeState.isLoading}
+                id="resume-file"
                 onChange={(event) =>
                   void handleResumeFile(event.target.files?.[0])
                 }
+                ref={resumeInputRef}
                 type="file"
               />
-            </label>
-            {extractResumeState.isLoading && (
-              <p className="file-status">Извлекаем текст…</p>
-            )}
-            {resumeFileName && !extractResumeState.isLoading && (
-              <p className="file-status">Выбран файл: {resumeFileName}</p>
+              <label className="file-button" htmlFor="resume-file">
+                <FileText aria-hidden="true" />
+                <span>{resumeFileName || "Загрузить резюме"}</span>
+              </label>
+            </div>
+            {(extractResumeState.isLoading || resumeExtractedText) && (
+              <section className="resume-preview">
+                <div className="resume-preview__head">
+                  <div className="resume-preview__title">
+                    <span>ВЫДЕРЖКА ИЗ ФАЙЛА</span>
+                    <strong>Предпросмотр резюме</strong>
+                  </div>
+                  <div className="resume-preview__actions">
+                    <small>
+                      {extractResumeState.isLoading
+                        ? "Извлекаем текст…"
+                        : `${resumeExtractedText.length} символов`}
+                    </small>
+                    <button
+                      aria-label="Очистить резюме"
+                      className="resume-preview__clear"
+                      onClick={clearResumeFile}
+                      type="button"
+                    >
+                      <X aria-hidden="true" />
+                      <span>Очистить</span>
+                    </button>
+                  </div>
+                </div>
+                {extractResumeState.isLoading ? (
+                  <div className="resume-preview__skeleton" aria-label="Извлекаем текст резюме">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ) : (
+                  <div className="resume-preview__body">
+                    {resumeExtractedText.split(/\n{2,}/).map((paragraph, index) => (
+                      <p className="resume-preview__paragraph" key={`${paragraph}-${index}`}>
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
             <Field
               error={form.formState.errors.profile?.message}
@@ -436,9 +525,17 @@ export function NewInterviewPage() {
                   : "Контекст кандидата"
               }
             >
-              <textarea
+              <VoiceTextarea
+                aria-label={
+                  trainingMode === "candidate"
+                    ? "Коротко о себе"
+                    : "Контекст кандидата"
+                }
+                onValueChange={(profile) =>
+                  form.setValue("profile", profile, { shouldDirty: true })
+                }
                 placeholder="Опыт, навыки, проекты и важные детали для сценария"
-                {...form.register("profile")}
+                value={values.profile ?? ""}
               />
             </Field>
           </article>
@@ -474,49 +571,84 @@ export function NewInterviewPage() {
             value={focus}
             onChange={setFocus}
           />
-          <section className="parameter-group">
-            <h3>Свои вопросы</h3>
-            <OptionGroup
-              ariaLabel="Источник вопросов"
-              options={[
-                { value: "mixed", title: "Смешанный" },
-                { value: "custom", title: "Свой план" },
-                ...(trainingMode === "interviewer"
-                  ? [{ value: "free", title: "Свободное интервью" }]
-                  : []),
-              ]}
-              value={questionPlan}
-              onChange={(value) =>
-                setQuestionPlan(value as "glasno" | "custom" | "mixed" | "free")
-              }
-            />
+          <section className="parameter-group custom-questions-panel">
+            <div className="parameter-copy">
+              <h3>Свои вопросы</h3>
+            </div>
+            <div className="custom-questions-content">
+              {trainingMode === "interviewer" && (
+                <div aria-label="Источник вопросов" className="interviewer-scenario-grid" role="radiogroup">
+                  {[
+                    { value: "mixed", title: "Смешанный" },
+                    { value: "custom", title: "Свой план" },
+                    { value: "free", title: "Свободное интервью" },
+                  ].map((option) => (
+                    <button
+                      aria-checked={questionPlan === option.value}
+                      className={questionPlan === option.value ? "option-card option-card--active" : "option-card"}
+                      key={option.value}
+                      onClick={() => setQuestionPlan(option.value as typeof questionPlan)}
+                      role="radio"
+                      type="button"
+                    >
+                      <strong>{option.title}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
             {questionPlan !== "free" && (
-              <>
-                <textarea
+              <div className="custom-questions-grid">
+                <Field label="Что хотите потренировать">
+                  <VoiceTextarea
                   aria-label="Свой план вопросов"
-                  className="compact-textarea"
-                  onChange={(event) => setCustomQuestions(event.target.value)}
+                  className="compact-voice-textarea"
+                  onValueChange={setCustomQuestions}
                   placeholder="Добавьте вопросы или темы, если хотите дополнить план"
                   value={customQuestions}
                 />
-                <label className="file-button" htmlFor="questions-file">
-                  <Upload aria-hidden="true" size={16} />
-                  Добавить файл
-                  <input
-                    accept=".pdf,.docx,.txt,.md,.csv,.xls,.xlsx"
-                    aria-label="Добавить файл с вопросами"
-                    id="questions-file"
-                    onChange={(event) =>
-                      void handleQuestionsFile(event.target.files?.[0])
-                    }
-                    type="file"
-                  />
-                </label>
-                {extractQuestionsState.isLoading && (
-                  <p className="file-status">Извлекаем вопросы…</p>
-                )}
-              </>
+                </Field>
+                <div className="question-options">
+                  <div className="file-upload file-upload--compact">
+                    <input
+                      accept=".pdf,.docx,.txt,.md,.csv,.xls,.xlsx"
+                      aria-label="Добавить файл с вопросами"
+                      className="file-input"
+                      disabled={extractQuestionsState.isLoading}
+                      id="questions-file"
+                      onChange={(event) =>
+                        void handleQuestionsFile(event.target.files?.[0])
+                      }
+                      ref={questionsInputRef}
+                      type="file"
+                    />
+                    <label className="file-button" htmlFor="questions-file">
+                      <Upload aria-hidden="true" size={16} />
+                      <span>{questionsFileName || "Добавить файл"}</span>
+                    </label>
+                  </div>
+                  {trainingMode === "candidate" && (
+                    <label className="toggle-option">
+                      <input
+                        checked={questionPlan === "custom"}
+                        onChange={(event) =>
+                          setQuestionPlan(event.target.checked ? "custom" : "mixed")
+                        }
+                        type="checkbox"
+                      />
+                      <span className="toggle-switch" aria-hidden="true" />
+                      <strong>Только мои вопросы</strong>
+                    </label>
+                  )}
+                  {extractQuestionsState.isLoading && (
+                    <p className="file-status">Извлекаем вопросы…</p>
+                  )}
+                  {questionsFileText && !extractQuestionsState.isLoading && (
+                    <p className="file-status">Текст из файла добавлен в поле вопросов.</p>
+                  )}
+                </div>
+              </div>
             )}
+            </div>
           </section>
         </div>
         {form.formState.errors.root && (

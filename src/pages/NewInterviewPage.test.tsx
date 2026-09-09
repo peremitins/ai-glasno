@@ -25,18 +25,30 @@ function renderNewInterviewPage() {
 }
 
 describe("NewInterviewPage", () => {
+  it("открывает список ролей по нажатию на поле", async () => {
+    const user = userEvent.setup();
+
+    renderNewInterviewPage();
+    await user.click(screen.getByRole("tab", { name: "Вручную" }));
+    await user.click(screen.getByRole("combobox", { name: "Профессия или роль" }));
+
+    expect(
+      await screen.findByRole("option", { name: /Frontend-разработчик/ }),
+    ).toBeVisible();
+  });
+
   it("собирает ручной контекст по профессии и выбранным тегам", async () => {
     const user = userEvent.setup();
 
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
     await user.type(
-      screen.getByLabelText("Профессия или роль"),
+      screen.getByRole("combobox", { name: "Профессия или роль" }),
       "Frontend-разработчик",
     );
 
     await user.click(
-      await screen.findByRole("button", { name: /Frontend-разработчик/ }),
+      await screen.findByRole("option", { name: /Frontend-разработчик/ }),
     );
     expect(screen.getByRole("button", { name: "React" })).toBeInTheDocument();
 
@@ -124,9 +136,9 @@ describe("NewInterviewPage", () => {
 
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
-    await user.click(screen.getByLabelText("Профессия или роль"));
+    await user.click(screen.getByRole("combobox", { name: "Профессия или роль" }));
     await user.click(
-      await screen.findByRole("button", { name: /Frontend-разработчик/ }),
+      await screen.findByRole("option", { name: /Frontend-разработчик/ }),
     );
     await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
 
@@ -144,11 +156,26 @@ describe("NewInterviewPage", () => {
       new File(["Опыт"], "resume.txt", { type: "text/plain" }),
     );
 
+    expect(screen.getByLabelText("Коротко о себе")).toHaveValue("");
     expect(
-      await screen.findByDisplayValue(
-        "Разрабатываю интерфейсы на React и TypeScript.",
-      ),
+      await screen.findByText("Предпросмотр резюме"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("Разрабатываю интерфейсы на React и TypeScript."),
+    ).toBeInTheDocument();
+  });
+
+  it("очищает свои вопросы через контрол VoiceTextarea", async () => {
+    const user = userEvent.setup();
+
+    renderNewInterviewPage();
+    await user.type(
+      screen.getByLabelText("Свой план вопросов"),
+      "Расскажите о сложном проекте",
+    );
+    await user.click(screen.getByRole("button", { name: "Очистить текст" }));
+
+    expect(screen.getByLabelText("Свой план вопросов")).toHaveValue("");
   });
 
   it("извлекает вопросы из прикреплённого файла", async () => {
