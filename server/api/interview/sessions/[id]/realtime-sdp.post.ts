@@ -5,6 +5,7 @@ import { buildRealtimeSessionPayload } from "../../../../application/interview/r
 import { assertOwnedInterviewSession } from "../../../../application/interview/sessionOwnership";
 import { InterviewRepository } from "../../../../infrastructure/db/interviewRepository";
 import { getRuntimeConfig } from "../../../../config/runtimeConfig";
+import { exchangeRealtimeSdpWithRelay } from "../../../../infrastructure/llm/aiRelay";
 import { apiError } from "../../../../utils/apiError";
 import { defineApiRoute } from "../../../../utils/defineApiRoute";
 import { requireSession } from "../../../../utils/session";
@@ -42,19 +43,25 @@ export default defineApiRoute(async (event) => {
   }
 
   const runtimeConfig = getRuntimeConfig();
+  const realtimeSession = buildRealtimeSessionPayload({
+    model: runtimeConfig.server.openAi.realtimeModel,
+    question: currentTurn.question,
+    role: interview.role,
+    sessionId: interview.id,
+  }).session;
+
+  if (runtimeConfig.server.aiRelay.enabled) {
+    const sdp = await exchangeRealtimeSdpWithRelay({
+      config: runtimeConfig.server.aiRelay,
+      sdp: parsed.data.sdp,
+      session: realtimeSession,
+    });
+    return { sdp };
+  }
+
   const body = new FormData();
   body.set("sdp", parsed.data.sdp);
-  body.set(
-    "session",
-    JSON.stringify(
-      buildRealtimeSessionPayload({
-        model: runtimeConfig.server.openAi.realtimeModel,
-        question: currentTurn.question,
-        role: interview.role,
-        sessionId: interview.id,
-      }).session,
-    ),
-  );
+  body.set("session", JSON.stringify(realtimeSession));
 
   let response: Response;
   try {
