@@ -544,6 +544,64 @@
   border-radius: var(--radius-sm);
   background: var(--surface-soft);
 }
+.hint-disclosure summary,
+.plan-disclosure summary {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+.hint-disclosure summary::-webkit-details-marker,
+.plan-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.hint-disclosure summary span,
+.plan-disclosure summary span {
+  display: grid;
+  gap: 3px;
+}
+.hint-disclosure summary em,
+.plan-disclosure summary em {
+  color: var(--accent-2);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.hint-disclosure summary strong,
+.plan-disclosure summary strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.hint-disclosure summary::after,
+.plan-disclosure summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  color: var(--text-muted);
+}
+.hint-disclosure[open] summary::after,
+.plan-disclosure[open] summary::after {
+  content: "−";
+}
+.hint-disclosure summary ~ *,
+.plan-disclosure summary ~ * {
+  margin-top: 12px;
+}
+.plan-disclosure {
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+.plan-disclosure p {
+  margin-bottom: 0;
+}
 .hint-disclosure h3,
 .hint-disclosure p {
   margin: 0;
