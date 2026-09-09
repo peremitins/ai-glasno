@@ -1,9 +1,12 @@
+import { buildInterviewHintPack } from "./hintPack";
+
 type SessionRecord = {
   id: string;
   status: string;
   vacancyTitle: string | null;
   role: string | null;
   questionCount: number;
+  metadata?: unknown;
 };
 
 type TurnRecord = {
@@ -66,6 +69,11 @@ export function toInterviewState(session: SessionRecord, turns: TurnRecord[]) {
       vacancyTitle: session.vacancyTitle,
       role: session.role,
       totalQuestions: session.questionCount,
+      plan: Array.isArray(readRecord(readRecord(session.metadata).plan).items)
+        ? (readRecord(readRecord(session.metadata).plan).items as Array<Record<string, unknown>>).flatMap((item) =>
+            typeof item.question === "string" ? [{ id: String(item.id ?? item.question), question: item.question }] : [],
+          )
+        : [],
     },
     turns: orderedTurns.map((turn) => {
       const metadata = readRecord(turn.metadata);
@@ -101,4 +109,3 @@ export function toInterviewState(session: SessionRecord, turns: TurnRecord[]) {
       : null,
   };
 }
-import { buildInterviewHintPack } from "./hintPack";

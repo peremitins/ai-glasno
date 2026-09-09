@@ -38,6 +38,11 @@ let sessions = [...initialSessions];
 const initialWorkspace: InterviewWorkspace = {
   session: initialSessions[0],
   totalQuestions: 3,
+  plan: [
+    { id: "turn_01", question: "Объясните разницу между type и interface в TypeScript." },
+    { id: "turn_02", question: "Когда стоит использовать unknown вместо any?" },
+    { id: "turn_03", question: "Как вы проверяете качество решения перед выпуском?" },
+  ],
   currentTurn: {
     id: "turn_01",
     index: 1,
