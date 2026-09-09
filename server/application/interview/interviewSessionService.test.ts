@@ -95,6 +95,22 @@ describe("InterviewSessionService", () => {
     );
   });
 
+  it("создаёт для нового вопроса структурированную подсказку", async () => {
+    const repository = createRepository();
+    const service = new InterviewSessionService(repository);
+
+    const state = await service.nextQuestion({
+      owner: { anonymousSessionId: "anonymous-1", userId: null },
+      sessionId: "session-1",
+      turnId: "turn-1",
+    });
+
+    expect(state.currentTurn?.hintPack).toMatchObject({
+      structure: expect.any(String),
+      bullets: expect.arrayContaining([expect.any(String)]),
+    });
+  });
+
   it("завершает сессию, если в плане нет следующего вопроса", async () => {
     const repository = createRepository();
     const service = new InterviewSessionService(repository);

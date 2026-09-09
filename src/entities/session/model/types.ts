@@ -15,6 +15,14 @@ export const interviewSessionsSchema = z.array(interviewSessionSchema);
 
 export type InterviewSession = z.infer<typeof interviewSessionSchema>;
 
+export const interviewHintPackSchema = z.object({
+  bullets: z.array(z.string()).default([]),
+  focus: z.string().nullable().optional(),
+  structure: z.string(),
+});
+
+export type InterviewHintPack = z.infer<typeof interviewHintPackSchema>;
+
 export const interviewMessageSchema = z.object({
   id: z.string(),
   role: z.enum(["candidate", "interviewer"]),
@@ -27,6 +35,7 @@ export const interviewTurnSchema = z.object({
   index: z.number().int().positive(),
   question: z.string(),
   hint: z.string().nullable(),
+  hintPack: interviewHintPackSchema.nullable().default(null),
   answer: z.string().nullable(),
   messages: z.array(interviewMessageSchema),
 });
