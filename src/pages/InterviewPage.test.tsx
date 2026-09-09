@@ -203,6 +203,7 @@ describe("InterviewPage", () => {
     renderInterviewPage();
 
     await screen.findByRole("heading", { name: "Практика TypeScript" });
+    await user.click(screen.getByRole("button", { name: "Открыть подсказки" }));
 
     await user.type(
       screen.getByLabelText("Ваш ответ"),
@@ -218,7 +219,10 @@ describe("InterviewPage", () => {
 
     expect(await screen.findByText("Вопрос 2 из 3")).toBeInTheDocument();
     expect(
-      screen.getByText("Когда стоит использовать unknown вместо any?"),
+      screen.getAllByText("Когда стоит использовать unknown вместо any?"),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getByRole("region", { name: "Подсказки к вопросу" }),
     ).toBeInTheDocument();
   });
 

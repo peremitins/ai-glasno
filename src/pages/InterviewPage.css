@@ -602,6 +602,15 @@
 .plan-disclosure p {
   margin-bottom: 0;
 }
+.plan-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
 .hint-disclosure h3,
 .hint-disclosure p {
   margin: 0;

@@ -14,6 +14,7 @@ describe("сохранение реплики realtime-диалога", () => {
       })),
       findTurnById: vi.fn(async () => ({
         id: "turn-01",
+        question: "Как вы измерили эффект?",
         metadata: { hintPack: { structure: "STAR" } },
         sessionId: "session-01",
       })),
@@ -32,7 +33,9 @@ describe("сохранение реплики realtime-диалога", () => {
       "session-01",
       "turn-01",
       expect.objectContaining({
-        hintPack: { structure: "STAR" },
+        hintPack: expect.objectContaining({
+          example: expect.stringContaining("Я внедрил дизайн-систему."),
+        }),
         dialogue: [
           expect.objectContaining({
             content: "Я внедрил дизайн-систему.",

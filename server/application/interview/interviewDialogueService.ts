@@ -1,4 +1,5 @@
 import { apiError } from "../../utils/apiError";
+import { buildInterviewHintPack } from "./hintPack";
 import { assertOwnedInterviewSession } from "./sessionOwnership";
 
 type DialogueRole = "candidate" | "interviewer";
@@ -10,6 +11,7 @@ type DialogueRepository = {
     anonymousSessionId: string;
     userId: string | null;
     status: string;
+    role?: string | null;
   } | null>;
   findTurnById: (
     sessionId: string,
@@ -17,6 +19,7 @@ type DialogueRepository = {
   ) => Promise<{
     id: string;
     sessionId: string;
+    question: string;
     metadata: unknown;
   } | null>;
   updateTurnMetadata: (
@@ -64,6 +67,11 @@ export class InterviewDialogueService {
           at: new Date().toISOString(),
         },
       ],
+      hintPack: buildInterviewHintPack(
+        turn.question,
+        session.role ?? null,
+        params.content.trim(),
+      ),
     });
   }
 }

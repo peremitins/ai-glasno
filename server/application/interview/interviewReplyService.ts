@@ -1,4 +1,5 @@
 import { apiError } from "../../utils/apiError";
+import { buildInterviewHintPack } from "./hintPack";
 import { assertOwnedInterviewSession } from "./sessionOwnership";
 
 type Owner = { anonymousSessionId: string; userId?: string | null };
@@ -118,6 +119,11 @@ export class InterviewReplyService {
     await this.repository.updateTurnMetadata(session.id, turn.id, {
       ...metadata,
       dialogue,
+      hintPack: buildInterviewHintPack(
+        turn.question,
+        session.role ?? null,
+        params.message.trim(),
+      ),
     });
   }
 }
