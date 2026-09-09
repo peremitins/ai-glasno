@@ -14,6 +14,8 @@ import {
   type RealtimeSdpResponse,
   type SaveAnswerRequest,
   type SessionCreationRequest,
+  type UploadedText,
+  uploadedTextSchema,
 } from "../model/types";
 
 export const sessionApi = baseApi.injectEndpoints({
@@ -35,6 +37,30 @@ export const sessionApi = baseApi.injectEndpoints({
         interviewSessionSchema.parse(response),
       transformErrorResponse: toApiError,
       invalidatesTags: ["Session", "Dashboard"],
+    }),
+    extractResume: builder.mutation<UploadedText, File>({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return { url: "interview/resume/extract", method: "POST", body };
+      },
+      transformResponse: (response: unknown) =>
+        uploadedTextSchema.parse(response),
+      transformErrorResponse: toApiError,
+    }),
+    extractQuestions: builder.mutation<UploadedText, File>({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return {
+          url: "interview/custom-questions/extract",
+          method: "POST",
+          body,
+        };
+      },
+      transformResponse: (response: unknown) =>
+        uploadedTextSchema.parse(response),
+      transformErrorResponse: toApiError,
     }),
     getInterviewWorkspace: builder.query<InterviewWorkspace, string>({
       query: (sessionId) => `sessions/${sessionId}`,
@@ -108,6 +134,8 @@ export const {
   useCompleteSessionMutation,
   useAppendDialogueMutation,
   useCreateSessionMutation,
+  useExtractQuestionsMutation,
+  useExtractResumeMutation,
   useExchangeRealtimeSdpMutation,
   useGetInterviewWorkspaceQuery,
   useGetSessionsQuery,

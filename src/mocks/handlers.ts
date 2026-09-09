@@ -39,9 +39,15 @@ const initialWorkspace: InterviewWorkspace = {
   session: initialSessions[0],
   totalQuestions: 3,
   plan: [
-    { id: "turn_01", question: "Объясните разницу между type и interface в TypeScript." },
+    {
+      id: "turn_01",
+      question: "Объясните разницу между type и interface в TypeScript.",
+    },
     { id: "turn_02", question: "Когда стоит использовать unknown вместо any?" },
-    { id: "turn_03", question: "Как вы проверяете качество решения перед выпуском?" },
+    {
+      id: "turn_03",
+      question: "Как вы проверяете качество решения перед выпуском?",
+    },
   ],
   currentTurn: {
     id: "turn_01",
@@ -96,6 +102,37 @@ export function resetMockData() {
 }
 
 export const handlers = [
+  http.post(
+    `${API_BASE_URL}/interview/custom-questions/extract`,
+    async ({ request }) => {
+      const form = await request.formData();
+      const file = form.get("file");
+      if (!file || typeof file !== "object") {
+        return HttpResponse.json(
+          { code: "E_VALIDATION", message: "Прикрепите файл с вопросами." },
+          { status: 400 },
+        );
+      }
+      return HttpResponse.json({
+        fileName: file instanceof File ? file.name : null,
+        text: "Расскажите о сложном проекте.",
+      });
+    },
+  ),
+  http.post(`${API_BASE_URL}/interview/resume/extract`, async ({ request }) => {
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!file || typeof file !== "object") {
+      return HttpResponse.json(
+        { code: "E_VALIDATION", message: "Прикрепите файл резюме." },
+        { status: 400 },
+      );
+    }
+    return HttpResponse.json({
+      fileName: file instanceof File ? file.name : null,
+      text: "Разрабатываю интерфейсы на React и TypeScript.",
+    });
+  }),
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
   http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
   http.post(`${API_BASE_URL}/sessions`, async ({ request }) => {

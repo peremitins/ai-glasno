@@ -78,13 +78,13 @@ export const interviewLevelSchema = z.enum(["junior", "middle", "senior"]);
 
 export const sessionDraftSchema = z.object({
   vacancy: z.string().trim().min(10, "Опишите вакансию не короче 10 символов"),
-  profile: z.string().trim().min(20, "Опишите профиль не короче 20 символов"),
+  profile: z.string().trim().max(15_000),
   format: interviewFormatSchema,
   level: interviewLevelSchema,
   questionsCount: z
     .number()
     .int()
-    .min(5, "Выберите от 5 до 20 вопросов")
+    .min(3, "Выберите от 3 до 20 вопросов")
     .max(20, "Выберите от 5 до 20 вопросов"),
   durationMinutes: z
     .number()
@@ -108,7 +108,15 @@ export type AdvancedSessionCreationRequest = {
   focus?: "hr_screening" | "professional" | "behavioral" | "salary_negotiation";
   interviewerMode: "soft" | "neutral" | "strict";
   customQuestionsText?: string;
+  candidatePersona?: string;
+  questionSourceMode?: "glasno" | "custom" | "mixed" | "free";
 };
 
 export type SessionCreationRequest =
   AdvancedSessionCreationRequest | SessionDraft;
+
+export const uploadedTextSchema = z.object({
+  fileName: z.string().nullable(),
+  text: z.string(),
+});
+export type UploadedText = z.infer<typeof uploadedTextSchema>;

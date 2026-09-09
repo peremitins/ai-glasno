@@ -66,6 +66,10 @@ describe("InterviewCreationService", () => {
         sessionGoal: "standard",
         interviewerMode: "strict",
         focus: "professional",
+        candidatePersona: "Многословный",
+        questionSourceMode: "custom",
+        customQuestionsText:
+          "Расскажите о сложном проекте.\n\nКак вы принимаете решения?",
       },
     });
 
@@ -73,7 +77,15 @@ describe("InterviewCreationService", () => {
       trainingMode: "interviewer",
       source: "profession",
       interviewerMode: "strict",
-      metadata: { sessionGoal: "standard", focus: "professional" },
+      metadata: {
+        sessionGoal: "standard",
+        focus: "professional",
+        candidatePersona: "Многословный",
+        questionSourceMode: "custom",
+      },
+    });
+    expect(created[1]).toMatchObject({
+      question: "Расскажите о сложном проекте.",
     });
   });
 });
