@@ -23,7 +23,10 @@ describe("голосовой AI Relay", () => {
     expect(request).toHaveBeenCalledWith(
       "https://relay.example.test/v1/realtime/calls",
       expect.objectContaining({
-        headers: expect.objectContaining({ "X-Relay-Client": "glasno-local" }),
+        headers: expect.objectContaining({
+          "X-Relay-Client": "glasno-local",
+          "X-Request-Id": expect.any(String),
+        }),
         method: "POST",
       }),
     );

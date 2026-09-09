@@ -23,9 +23,12 @@ export async function exchangeRealtimeSdpWithRelay(params: {
   const rawBody = JSON.stringify({ sdp: params.sdp, session: params.session });
   const timestamp = String(Date.now());
   const nonce = randomUUID();
+  const requestId = randomUUID();
   const bodyHash = createHash("sha256").update(rawBody).digest("hex");
   const signature = createHmac("sha256", config.authSecret)
-    .update(["POST", path, timestamp, nonce, bodyHash, config.clientId].join("\n"))
+    .update(
+      ["POST", path, timestamp, nonce, bodyHash, config.clientId].join("\n"),
+    )
     .digest("base64");
 
   let response: Response;
@@ -37,6 +40,7 @@ export async function exchangeRealtimeSdpWithRelay(params: {
         "X-Purpose": "realtime_call",
         "X-Relay-Client": config.clientId,
         "X-Relay-Nonce": nonce,
+        "X-Request-Id": requestId,
         "X-Relay-Signature": signature,
         "X-Relay-Timestamp": timestamp,
       },
