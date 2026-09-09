@@ -9,6 +9,7 @@ const repository = vi.hoisted(() => ({
 vi.mock("../../server/config/runtimeConfig", () => ({
   getRuntimeConfig: () => ({
     server: {
+      aiRelay: { authSecret: "", clientId: "", enabled: false, url: "" },
       openAi: { apiKey: "server-only-key", realtimeModel: "gpt-realtime-mini" },
     },
   }),
