@@ -1,11 +1,15 @@
 import { Provider } from "react-redux";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import AppRouter from "@/app/AppRouter";
 import { createAppStore } from "@/app/store";
+import {
+  type SpeechRecognitionInstance,
+  type SpeechRecognitionWindow,
+} from "@/shared/lib/speechRecognition";
 
 function LocationProbe() {
   const location = useLocation();
@@ -30,7 +34,9 @@ describe("NewInterviewPage", () => {
 
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
-    await user.click(screen.getByRole("combobox", { name: "Профессия или роль" }));
+    await user.click(
+      screen.getByRole("combobox", { name: "Профессия или роль" }),
+    );
 
     expect(
       await screen.findByRole("option", { name: /Frontend-разработчик/ }),
@@ -136,7 +142,9 @@ describe("NewInterviewPage", () => {
 
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
-    await user.click(screen.getByRole("combobox", { name: "Профессия или роль" }));
+    await user.click(
+      screen.getByRole("combobox", { name: "Профессия или роль" }),
+    );
     await user.click(
       await screen.findByRole("option", { name: /Frontend-разработчик/ }),
     );
@@ -157,9 +165,7 @@ describe("NewInterviewPage", () => {
     );
 
     expect(screen.getByLabelText("Коротко о себе")).toHaveValue("");
-    expect(
-      await screen.findByText("Предпросмотр резюме"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Предпросмотр резюме")).toBeInTheDocument();
     expect(
       screen.getByText("Разрабатываю интерфейсы на React и TypeScript."),
     ).toBeInTheDocument();
@@ -176,6 +182,68 @@ describe("NewInterviewPage", () => {
     await user.click(screen.getByRole("button", { name: "Очистить текст" }));
 
     expect(screen.getByLabelText("Свой план вопросов")).toHaveValue("");
+  });
+
+  it("добавляет распознанную речь в свои вопросы через микрофон", async () => {
+    const user = userEvent.setup();
+    const SpeechRecognition = class implements SpeechRecognitionInstance {
+      static instance: SpeechRecognitionInstance | null = null;
+      continuous = false;
+      interimResults = false;
+      lang = "";
+      onend: (() => void) | null = null;
+      onerror: ((event: { error?: string }) => void) | null = null;
+      onresult: SpeechRecognitionInstance["onresult"] = null;
+      start = vi.fn();
+      stop = vi.fn(() => this.onend?.());
+
+      constructor() {
+        SpeechRecognition.instance = this;
+      }
+    };
+    const speechWindow = window as Window & SpeechRecognitionWindow;
+    const originalSpeechRecognition = speechWindow.SpeechRecognition;
+
+    Object.defineProperty(window, "SpeechRecognition", {
+      configurable: true,
+      value: SpeechRecognition,
+    });
+
+    try {
+      renderNewInterviewPage();
+      const questionsControl = screen.getByLabelText("Свой план вопросов");
+      const questionsVoiceInput = within(questionsControl.parentElement!);
+      await user.click(
+        questionsVoiceInput.getByRole("button", {
+          name: "Начать голосовой ввод",
+        }),
+      );
+
+      expect(SpeechRecognition.instance).not.toBeNull();
+      expect(SpeechRecognition.instance!.start).toHaveBeenCalledOnce();
+      SpeechRecognition.instance!.onresult?.({
+        resultIndex: 0,
+        results: [{ isFinal: true, 0: { transcript: "Расскажите о React" } }],
+      } as never);
+
+      await waitFor(() =>
+        expect(screen.getByLabelText("Свой план вопросов")).toHaveValue(
+          "Расскажите о React",
+        ),
+      );
+
+      await user.click(
+        questionsVoiceInput.getByRole("button", {
+          name: "Остановить голосовой ввод",
+        }),
+      );
+      expect(SpeechRecognition.instance!.stop).toHaveBeenCalledOnce();
+    } finally {
+      Object.defineProperty(window, "SpeechRecognition", {
+        configurable: true,
+        value: originalSpeechRecognition,
+      });
+    }
   });
 
   it("извлекает вопросы из прикреплённого файла", async () => {

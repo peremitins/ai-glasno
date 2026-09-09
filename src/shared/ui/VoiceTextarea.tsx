@@ -1,13 +1,15 @@
-import { Mic, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, type TextareaHTMLAttributes } from "react";
 
 import "./VoiceTextarea.css";
+import { VoiceInput } from "./VoiceInput";
 
 type VoiceTextareaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
   "onChange" | "value"
 > & {
   onValueChange: (value: string) => void;
+  onVoiceError?: (message: string) => void;
   value: string;
 };
 
@@ -15,6 +17,7 @@ type VoiceTextareaProps = Omit<
 export function VoiceTextarea({
   className,
   onValueChange,
+  onVoiceError,
   value,
   ...props
 }: VoiceTextareaProps) {
@@ -47,13 +50,13 @@ export function VoiceTextarea({
           <X aria-hidden="true" />
         </button>
       )}
-      <span
-        aria-hidden="true"
+      <VoiceInput
         className="voice-textarea__mic"
-        title="Голосовой ввод доступен во время репетиции"
-      >
-        <Mic />
-      </span>
+        disabled={props.disabled}
+        onError={onVoiceError}
+        onValueChange={onValueChange}
+        value={value}
+      />
     </div>
   );
 }

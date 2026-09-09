@@ -66,6 +66,7 @@
   --surface: rgb(16 20 43 / 58%);
   --surface-soft: rgb(255 255 255 / 7.5%);
   --surface-raised: rgb(255 255 255 / 13%);
+  --surface-menu: #20263a;
   --glass-border: rgb(255 255 255 / 14%);
   --glass-blur: 22px;
   --text-primary: #f7f8ff;
@@ -118,6 +119,7 @@ html[data-theme="light"] {
   --surface: rgb(255 255 255 / 62%);
   --surface-soft: rgb(255 255 255 / 58%);
   --surface-raised: rgb(255 255 255 / 82%);
+  --surface-menu: #ffffff;
   --glass-border: rgb(82 93 142 / 16%);
   --text-primary: #15182a;
   --text-secondary: rgb(31 35 62 / 74%);

@@ -1,8 +1,8 @@
 import { PDFParse } from "pdf-parse";
 import { extractRawText } from "mammoth";
-import { read, utils } from "xlsx/xlsx.mjs";
+import { read, utils } from "xlsx";
 
-import { apiError } from "../../utils/apiError";
+import { apiError } from "../../utils/apiError.js";
 
 type Upload = {
   data: Buffer;
