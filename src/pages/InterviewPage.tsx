@@ -335,7 +335,9 @@ export function InterviewPage() {
       <div className="session-progress" aria-label={`Прогресс ${progress}%`}>
         <span style={{ width: `${progress}%` }} />
       </div>
-      <section className={`call ${fullscreen ? "call--fs" : ""}`}>
+      <section
+        className={`call ${fullscreen ? "call--fs" : ""} ${chatOpen || hintsOpen ? "call--side" : ""}`}
+      >
         <div className="call-stage">
           <div className="videos">
             <section className="vtile vtile--peer">
