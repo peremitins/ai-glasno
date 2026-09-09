@@ -30,8 +30,10 @@ const sourceStateSchema = z.object({
     vacancyTitle: z.string().nullable().optional(),
     role: z.string().nullable().optional(),
     totalQuestions: z.number().int().positive(),
+    plan: z.array(z.object({ id: z.string(), question: z.string() })).default([]),
   }),
   currentTurn: sourceTurnSchema.nullable(),
+  turns: z.array(sourceTurnSchema).default([]),
 });
 
 const streamChunkSchema = z.object({
@@ -88,6 +90,9 @@ export function normalizeInterviewWorkspace(
       completedAt: null,
     },
     totalQuestions: session.totalQuestions,
+    plan: session.plan.length
+      ? session.plan
+      : sourceState.turns.map((turn) => ({ id: turn.id, question: turn.question })),
     currentTurn: currentTurn
       ? {
           id: currentTurn.id,

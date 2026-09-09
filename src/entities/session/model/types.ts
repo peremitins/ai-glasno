@@ -19,6 +19,7 @@ export const interviewHintPackSchema = z.object({
   bullets: z.array(z.string()).default([]),
   focus: z.string().nullable().optional(),
   structure: z.string(),
+  example: z.string().optional(),
 });
 
 export type InterviewHintPack = z.infer<typeof interviewHintPackSchema>;
@@ -44,6 +45,7 @@ export const interviewWorkspaceSchema = z.object({
   session: interviewSessionSchema,
   currentTurn: interviewTurnSchema.nullable(),
   totalQuestions: z.number().int().positive(),
+  plan: z.array(z.object({ id: z.string(), question: z.string() })).default([]),
 });
 
 export type InterviewWorkspace = z.infer<typeof interviewWorkspaceSchema>;

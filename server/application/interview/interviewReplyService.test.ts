@@ -40,7 +40,7 @@ describe("InterviewReplyService", () => {
     }
 
     expect(chunks).toEqual(["Расскажите ", "подробнее."]);
-    expect(savedMetadata).toEqual({
+    expect(savedMetadata).toMatchObject({
       dialogue: [
         {
           role: "user",
@@ -53,6 +53,9 @@ describe("InterviewReplyService", () => {
           at: expect.any(String),
         },
       ],
+      hintPack: {
+        example: expect.stringContaining("Я работал над интерфейсом."),
+      },
     });
   });
 });

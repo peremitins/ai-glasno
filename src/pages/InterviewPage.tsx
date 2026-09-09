@@ -284,7 +284,6 @@ export function InterviewPage() {
     if (!currentTurn) return;
     setActionError(null);
     setNotice(null);
-    dispatch(closeHints());
     try {
       await nextQuestion({ sessionId: id, turnId: currentTurn.id }).unwrap();
     } catch (requestError) {
@@ -297,7 +296,6 @@ export function InterviewPage() {
     setNotice(null);
     try {
       await completeSession(id).unwrap();
-      dispatch(closeHints());
     } catch (requestError) {
       setActionError(getApiErrorMessage(requestError));
     }
@@ -627,11 +625,7 @@ export function InterviewPage() {
                         <strong>Пример ответа</strong>
                       </span>
                     </summary>
-                    <p className="hint-sample">
-                      «В похожей ситуации я сначала определил контекст и
-                      критерии результата, затем предложил решение, согласовал
-                      его с командой и проверил эффект по конкретным метрикам.»
-                    </p>
+                    <p className="hint-sample">{currentTurn.hintPack?.example ?? "Пример формируется для текущего вопроса."}</p>
                   </details>
                   <details className="plan-disclosure" open>
                     <summary>
@@ -640,9 +634,8 @@ export function InterviewPage() {
                         <strong>План интервью</strong>
                       </span>
                     </summary>
-                    <p>
-                      {currentTurn.index} из {totalQuestions} вопросов
-                    </p>
+                    <ol className="plan-list">{data.plan.map((item) => <li key={item.id}>{item.question}</li>)}</ol>
+                    <p>{currentTurn.index} из {totalQuestions} вопросов</p>
                   </details>
                 </div>
               </section>
