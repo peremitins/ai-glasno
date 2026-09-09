@@ -2,6 +2,7 @@ import { getRuntimeConfig } from "../../config/runtimeConfig";
 import { apiError } from "../../utils/apiError";
 
 const RESPONSES_URL = "https://api.openai.com/v1/responses";
+const RELAY_RESPONSES_PATH = "/v1/responses";
 
 type ResponseDelta =
   { type: "delta"; text: string } | { type: "error"; message: string } | null;
@@ -78,33 +79,31 @@ export class InterviewResponder {
     dialogue: Array<{ role: "user" | "interviewer"; content: string }>;
   }): AsyncGenerator<string, void, void> {
     const config = getRuntimeConfig();
-    const response = await fetch(RESPONSES_URL, {
+    const payload = {
+      model: config.server.openAi.model,
+      stream: true,
+      max_output_tokens: 380,
+      input: [
+        {
+          role: "developer",
+          content: [{ type: "input_text", text: buildInstruction(input) }],
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: "Сформулируй следующую реплику интервьюера.",
+            },
+          ],
+        },
+      ],
+    };
+    const request = buildRequest(config.server.aiRelay, payload, config.server.openAi.apiKey);
+    const response = await fetch(request.url, {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${config.server.openAi.apiKey}`,
-        "content-type": "application/json",
-        accept: "text/event-stream",
-      },
-      body: JSON.stringify({
-        model: config.server.openAi.model,
-        stream: true,
-        max_output_tokens: 380,
-        input: [
-          {
-            role: "developer",
-            content: [{ type: "input_text", text: buildInstruction(input) }],
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: "Сформулируй следующую реплику интервьюера.",
-              },
-            ],
-          },
-        ],
-      }),
+      headers: request.headers,
+      body: request.body,
     });
     if (!response.ok || !response.body) {
       throw apiError("E_UPSTREAM", "Не удалось получить ответ интервьюера");
@@ -137,3 +136,54 @@ export class InterviewResponder {
     }
   }
 }
+
+function buildRequest(
+  relay: { authSecret: string; clientId: string; enabled: boolean; url: string },
+  payload: Record<string, unknown>,
+  apiKey: string,
+) {
+  if (!relay.enabled) {
+    return {
+      url: RESPONSES_URL,
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+        accept: "text/event-stream",
+      },
+      body: JSON.stringify(payload),
+    };
+  }
+  if (!relay.url || !relay.authSecret || !relay.clientId) {
+    throw apiError("E_UPSTREAM", "Сервис ответов интервьюера не настроен");
+  }
+  const body = JSON.stringify(payload);
+  const timestamp = String(Date.now());
+  const nonce = randomUUID();
+  const signature = createHmac("sha256", relay.authSecret)
+    .update(
+      [
+        "POST",
+        RELAY_RESPONSES_PATH,
+        timestamp,
+        nonce,
+        createHash("sha256").update(body).digest("hex"),
+        relay.clientId,
+      ].join("\n"),
+    )
+    .digest("base64");
+  return {
+    url: `${relay.url}${RELAY_RESPONSES_PATH}`,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      accept: "text/event-stream",
+      "X-Purpose": "interview_converse_stream",
+      "X-Relay-Client": relay.clientId,
+      "X-Relay-Nonce": nonce,
+      "X-Relay-Signature": signature,
+      "X-Relay-Timestamp": timestamp,
+      "X-Request-Id": randomUUID(),
+    },
+    body,
+  };
+}
+import { createHash, createHmac, randomUUID } from "node:crypto";
