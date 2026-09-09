@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/shared/api/baseApi";
 
 import {
   interviewWorkspaceSchema,
+  interviewHintPackSchema,
   type InterviewWorkspace,
 } from "../model/types";
 
@@ -17,7 +18,7 @@ const sourceTurnSchema = z.object({
   id: z.string(),
   index: z.number().int().positive(),
   question: z.string(),
-  hintPack: z.object({ structure: z.string() }).nullable().optional(),
+  hintPack: interviewHintPackSchema.nullable().optional(),
   answerTranscript: z.string().nullable(),
   messages: z.array(sourceMessageSchema).default([]),
 });
@@ -93,6 +94,7 @@ export function normalizeInterviewWorkspace(
           index: currentTurn.index,
           question: currentTurn.question,
           hint: currentTurn.hintPack?.structure ?? null,
+          hintPack: currentTurn.hintPack ?? null,
           answer: currentTurn.answerTranscript,
           messages: currentTurn.messages.map((message, index) => ({
             id: createMessageId(currentTurn.id, index, message.role),

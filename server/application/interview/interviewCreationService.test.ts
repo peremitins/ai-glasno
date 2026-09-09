@@ -31,6 +31,10 @@ describe("InterviewCreationService", () => {
     expect(state.session.id).toBe("session-1");
     expect(state.currentTurn?.index).toBe(1);
     expect(state.currentTurn?.question).toContain("Frontend-разработчик");
+    expect(state.currentTurn?.hintPack).toMatchObject({
+      structure: expect.any(String),
+      bullets: expect.arrayContaining([expect.any(String)]),
+    });
     expect(created).toHaveLength(2);
   });
 
@@ -50,7 +54,8 @@ describe("InterviewCreationService", () => {
       owner: { anonymousSessionId: "anonymous-1", userId: null },
       draft: {
         vacancy: "Senior Frontend-разработчик",
-        profile: "Создаю интерфейсы и развиваю архитектуру клиентских приложений.",
+        profile:
+          "Создаю интерфейсы и развиваю архитектуру клиентских приложений.",
         format: "technical",
         level: "senior",
         questionsCount: 10,

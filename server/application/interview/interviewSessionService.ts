@@ -25,6 +25,12 @@ type TurnRecord = {
 
 type PlanItem = { id: string; question: string };
 
+type HintPack = {
+  bullets: string[];
+  focus: string;
+  structure: string;
+};
+
 type InterviewSessionRepository = {
   findSessionById: (sessionId: string) => Promise<SessionRecord | null>;
   listTurns: (sessionId: string) => Promise<TurnRecord[]>;
@@ -76,6 +82,20 @@ function readDialogueAnswer(metadata: unknown) {
     .join("\n");
 }
 
+function buildHintPack(question: string, role: string | null): HintPack {
+  const subject = role?.trim() || "вашу профессиональную практику";
+  return {
+    focus: `Покажите, как ваш опыт связан с ролью «${subject}».`,
+    structure:
+      "Ответьте по схеме: контекст → ваша задача → конкретные действия → измеримый результат → вывод.",
+    bullets: [
+      `Сначала уточните контекст вопроса: «${question}».`,
+      "Назовите личный вклад, а не только действия команды.",
+      "Подкрепите ответ конкретным примером и результатом.",
+    ],
+  };
+}
+
 export class InterviewSessionService {
   constructor(private readonly repository: InterviewSessionRepository) {}
 
@@ -105,6 +125,7 @@ export class InterviewSessionService {
         answerTranscript: null,
         metadata: {
           planItemId: nextPlanItem.id,
+          hintPack: buildHintPack(nextPlanItem.question, session.role),
           dialogue: [
             {
               role: "interviewer",

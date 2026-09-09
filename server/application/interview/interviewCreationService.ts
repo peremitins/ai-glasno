@@ -1,4 +1,5 @@
 import type { CreationDraft as Draft } from "./creationRequest";
+import { buildInterviewHintPack } from "./hintPack";
 
 type LegacyDraft = {
   vacancy: string;
@@ -101,6 +102,7 @@ export class InterviewCreationService {
       answerTranscript: null,
       metadata: {
         planItemId: firstQuestion.id,
+        hintPack: buildInterviewHintPack(firstQuestion.question, role),
         dialogue: [
           {
             role: "interviewer",
@@ -127,7 +129,7 @@ export class InterviewCreationService {
         kind: "main",
         question: firstQuestion.question,
         answerTranscript: null,
-        hintPack: null,
+        hintPack: buildInterviewHintPack(firstQuestion.question, role),
         messages: [
           {
             role: "interviewer",

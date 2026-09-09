@@ -76,7 +76,9 @@ export function toInterviewState(session: SessionRecord, turns: TurnRecord[]) {
         kind: turn.kind,
         question: turn.question,
         answerTranscript: turn.answerTranscript,
-        hintPack: readHintPack(metadata.hintPack),
+        hintPack:
+          readHintPack(metadata.hintPack) ??
+          buildInterviewHintPack(turn.question, session.role),
         messages: readDialogue(metadata.dialogue),
       };
     }),
@@ -90,10 +92,13 @@ export function toInterviewState(session: SessionRecord, turns: TurnRecord[]) {
             kind: currentTurn.kind,
             question: currentTurn.question,
             answerTranscript: currentTurn.answerTranscript,
-            hintPack: readHintPack(metadata.hintPack),
+            hintPack:
+              readHintPack(metadata.hintPack) ??
+              buildInterviewHintPack(currentTurn.question, session.role),
             messages: readDialogue(metadata.dialogue),
           };
         })()
       : null,
   };
 }
+import { buildInterviewHintPack } from "./hintPack";
