@@ -76,10 +76,12 @@ describe("InterviewPage", () => {
     const hints = screen.getByRole("region", {
       name: "Подсказки к вопросу",
     });
-    expect(within(hints).getByText("Стратегия ответа")).toBeInTheDocument();
+    expect(within(hints).getByText("Как отвечать")).toBeInTheDocument();
     expect(
       within(hints).getByText("Сравните расширение и декларативное слияние."),
     ).toBeInTheDocument();
+    expect(within(hints).getByText("Пример ответа")).toBeInTheDocument();
+    expect(within(hints).getByText("План интервью")).toBeInTheDocument();
   });
 
   it("показывает историю и поле ответа внутри бокового чата", async () => {
@@ -226,6 +228,7 @@ describe("InterviewPage", () => {
     renderInterviewPage();
 
     await screen.findByRole("heading", { name: "Практика TypeScript" });
+    await user.click(screen.getByRole("button", { name: "Открыть подсказки" }));
 
     await user.type(
       screen.getByLabelText("Ваш ответ"),
@@ -239,6 +242,9 @@ describe("InterviewPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Ваш ответ")).toHaveValue("");
+    expect(
+      screen.getByRole("region", { name: "Подсказки к вопросу" }),
+    ).toBeInTheDocument();
   });
 
   it("показывает завершённое состояние после окончания сессии", async () => {

@@ -596,8 +596,16 @@ export function InterviewPage() {
                   </button>
                 </header>
                 <div className="hints-pane" aria-live="polite">
-                  <section className="hint-disclosure hint-disclosure--primary">
-                    <p className="hint-label">Стратегия ответа</p>
+                  <details
+                    className="hint-disclosure hint-disclosure--primary"
+                    open
+                  >
+                    <summary>
+                      <span>
+                        <em>Подсказки</em>
+                        <strong>Как отвечать</strong>
+                      </span>
+                    </summary>
                     {currentTurn.hintPack?.focus && (
                       <h3>{currentTurn.hintPack.focus}</h3>
                     )}
@@ -606,14 +614,36 @@ export function InterviewPage() {
                         currentTurn.hint ??
                         "Сформулируйте ответ последовательно и подкрепите его примером."}
                     </p>
-                    {currentTurn.hintPack?.bullets.length ? (
-                      <ul className="hint-list">
-                        {currentTurn.hintPack.bullets.map((hint) => (
-                          <li key={hint}>{hint}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </section>
+                    <ul className="hint-list">
+                      {(currentTurn.hintPack?.bullets ?? []).map((hint) => (
+                        <li key={hint}>{hint}</li>
+                      ))}
+                    </ul>
+                  </details>
+                  <details className="hint-disclosure" open>
+                    <summary>
+                      <span>
+                        <em>Пример</em>
+                        <strong>Пример ответа</strong>
+                      </span>
+                    </summary>
+                    <p className="hint-sample">
+                      «В похожей ситуации я сначала определил контекст и
+                      критерии результата, затем предложил решение, согласовал
+                      его с командой и проверил эффект по конкретным метрикам.»
+                    </p>
+                  </details>
+                  <details className="plan-disclosure" open>
+                    <summary>
+                      <span>
+                        <em>План</em>
+                        <strong>План интервью</strong>
+                      </span>
+                    </summary>
+                    <p>
+                      {currentTurn.index} из {totalQuestions} вопросов
+                    </p>
+                  </details>
                 </div>
               </section>
             )}
