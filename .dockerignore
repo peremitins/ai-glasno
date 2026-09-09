@@ -1,0 +1,17 @@
+.env
+.env.*
+.claude
+.codex
+.docs
+.git
+.serena
+.worktrees
+dist
+node_modules
+public
+src
+test
+tests
+AGENTS.md
+CLAUDE.md
+README.md
