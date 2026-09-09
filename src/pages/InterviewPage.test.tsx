@@ -66,6 +66,22 @@ describe("InterviewPage", () => {
     expect(document.querySelector(".call--side")).toBeInTheDocument();
   });
 
+  it("показывает структурированную подсказку к текущему вопросу", async () => {
+    const user = userEvent.setup();
+    renderInterviewPage();
+
+    await screen.findByRole("heading", { name: "Практика TypeScript" });
+    await user.click(screen.getByRole("button", { name: "Открыть подсказки" }));
+
+    const hints = screen.getByRole("region", {
+      name: "Подсказки к вопросу",
+    });
+    expect(within(hints).getByText("Стратегия ответа")).toBeInTheDocument();
+    expect(
+      within(hints).getByText("Сравните расширение и декларативное слияние."),
+    ).toBeInTheDocument();
+  });
+
   it("показывает историю и поле ответа внутри бокового чата", async () => {
     renderInterviewPage();
 

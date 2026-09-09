@@ -595,10 +595,26 @@ export function InterviewPage() {
                     <X aria-hidden="true" />
                   </button>
                 </header>
-                <p className="hint-disclosure">
-                  {currentTurn.hint ??
-                    "Сформулируйте ответ последовательно и подкрепите его примером."}
-                </p>
+                <div className="hints-pane" aria-live="polite">
+                  <section className="hint-disclosure hint-disclosure--primary">
+                    <p className="hint-label">Стратегия ответа</p>
+                    {currentTurn.hintPack?.focus && (
+                      <h3>{currentTurn.hintPack.focus}</h3>
+                    )}
+                    <p>
+                      {currentTurn.hintPack?.structure ??
+                        currentTurn.hint ??
+                        "Сформулируйте ответ последовательно и подкрепите его примером."}
+                    </p>
+                    {currentTurn.hintPack?.bullets.length ? (
+                      <ul className="hint-list">
+                        {currentTurn.hintPack.bullets.map((hint) => (
+                          <li key={hint}>{hint}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </section>
+                </div>
               </section>
             )}
           </div>
