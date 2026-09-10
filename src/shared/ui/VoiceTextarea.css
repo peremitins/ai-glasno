@@ -1,0 +1,56 @@
+.voice-textarea {
+  position: relative;
+}
+
+.voice-textarea__control {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-control);
+  outline: 0;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  padding: 14px 58px 14px 15px;
+  resize: vertical;
+}
+
+.voice-textarea__control:focus {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 4px rgb(124 92 255 / 18%);
+}
+
+.voice-textarea__clear,
+.voice-textarea__mic {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 11px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.voice-textarea__clear {
+  top: 10px;
+  cursor: pointer;
+}
+
+.voice-textarea__mic {
+  bottom: 10px;
+  opacity: 0.78;
+}
+
+.voice-textarea__clear svg,
+.voice-textarea__mic svg {
+  width: 16px;
+  height: 16px;
+}
+
+.compact-voice-textarea .voice-textarea__control {
+  min-height: 92px;
+}

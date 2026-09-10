@@ -1,4 +1,4 @@
-import { baseApi, toApiError } from "@/shared/api/baseApi";
+import { API_BASE_URL, baseApi, toApiError } from "@/shared/api/baseApi";
 
 import { normalizeInterviewWorkspace } from "./interviewTransport";
 
@@ -14,6 +14,8 @@ import {
   type RealtimeSdpResponse,
   type SaveAnswerRequest,
   type SessionCreationRequest,
+  type UploadedText,
+  uploadedTextSchema,
 } from "../model/types";
 
 export const sessionApi = baseApi.injectEndpoints({
@@ -35,6 +37,34 @@ export const sessionApi = baseApi.injectEndpoints({
         interviewSessionSchema.parse(response),
       transformErrorResponse: toApiError,
       invalidatesTags: ["Session", "Dashboard"],
+    }),
+    extractResume: builder.mutation<UploadedText, File>({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return {
+          url: resolveInterviewEndpoint("resume/extract"),
+          method: "POST",
+          body,
+        };
+      },
+      transformResponse: (response: unknown) =>
+        uploadedTextSchema.parse(response),
+      transformErrorResponse: toApiError,
+    }),
+    extractQuestions: builder.mutation<UploadedText, File>({
+      query: (file) => {
+        const body = new FormData();
+        body.append("file", file);
+        return {
+          url: resolveInterviewEndpoint("custom-questions/extract"),
+          method: "POST",
+          body,
+        };
+      },
+      transformResponse: (response: unknown) =>
+        uploadedTextSchema.parse(response),
+      transformErrorResponse: toApiError,
     }),
     getInterviewWorkspace: builder.query<InterviewWorkspace, string>({
       query: (sessionId) => `sessions/${sessionId}`,
@@ -104,10 +134,18 @@ export const sessionApi = baseApi.injectEndpoints({
   }),
 });
 
+export function resolveInterviewEndpoint(path: string, baseUrl = API_BASE_URL) {
+  return new URL(baseUrl).pathname.endsWith("/interview")
+    ? path
+    : `interview/${path}`;
+}
+
 export const {
   useCompleteSessionMutation,
   useAppendDialogueMutation,
   useCreateSessionMutation,
+  useExtractQuestionsMutation,
+  useExtractResumeMutation,
   useExchangeRealtimeSdpMutation,
   useGetInterviewWorkspaceQuery,
   useGetSessionsQuery,

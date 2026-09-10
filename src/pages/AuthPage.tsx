@@ -161,8 +161,8 @@ export function AuthPage() {
             </span>
             <p>Мы отправили код на {email}.</p>
           </div>
-          <label className="field" htmlFor="code">
-            <span>Код из письма</span>
+          <label className="auth-field" htmlFor="code">
+            <span className="auth-field__label">Код из письма</span>
             <input
               {...codeForm.register("code", {
                 onChange: (event) => {
@@ -173,7 +173,7 @@ export function AuthPage() {
                 },
               })}
               autoComplete="one-time-code"
-              className="code-input"
+              className="auth-code-input"
               id="code"
               inputMode="numeric"
               maxLength={6}
@@ -229,15 +229,20 @@ export function AuthPage() {
         noValidate
         onSubmit={emailForm.handleSubmit(submitEmail)}
       >
-        <label className="field" htmlFor="email">
-          <span>E-mail</span>
-          <span className="input-shell">
-            <Mail aria-hidden="true" size={18} />
+        <label className="auth-field" htmlFor="email">
+          <span className="auth-field__label">E-mail</span>
+          <span className="auth-input-shell">
+            <Mail
+              aria-hidden="true"
+              className="auth-input-shell__icon"
+              size={18}
+            />
             <input
               {...emailForm.register("email")}
               autoCapitalize="none"
               autoComplete="email"
               id="email"
+              className="auth-email-input"
               inputMode="email"
               placeholder="you@example.com"
               spellCheck="false"

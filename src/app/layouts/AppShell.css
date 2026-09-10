@@ -48,10 +48,14 @@
 }
 
 .app-sidebar {
+  position: sticky;
+  top: 20px;
   grid-template-rows: auto 1fr auto;
-  min-height: calc(100vh - 40px);
+  align-self: start;
+  height: calc(100dvh - 40px);
   padding: 16px 12px;
   gap: 28px;
+  overflow: hidden;
 }
 
 .app-sidebar-top,
@@ -59,6 +63,10 @@
 .app-topbar-actions {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+}
+
+.app-sidebar-top {
+  margin-bottom: 4px;
 }
 
 .app-brand {
@@ -71,8 +79,8 @@
 }
 
 .app-brand img {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   object-fit: cover;
 }
@@ -109,6 +117,7 @@
 .app-navigation {
   align-content: start;
   gap: 6px;
+  overflow-y: auto;
 }
 
 .app-nav-item {
@@ -127,6 +136,18 @@
     background 160ms ease,
     color 160ms ease,
     transform 160ms ease;
+}
+
+button.app-nav-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.app-nav-item--unavailable {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .app-nav-item:hover,
@@ -152,13 +173,14 @@
 }
 
 .app-sidebar-footer {
+  display: grid;
+  gap: 12px;
   align-self: end;
 }
 
 .app-progress-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--surface-soft);
@@ -166,19 +188,67 @@
   padding: 12px;
 }
 
-.app-progress-card > svg {
-  width: 19px;
-  color: var(--accent-2);
+.app-progress-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-.app-progress-card > div {
+.app-progress-metrics {
   display: grid;
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.app-progress-metrics span {
+  display: grid;
+  gap: 2px;
 }
 
 .app-progress-card strong {
   color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 16px;
+}
+
+.app-progress-card small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.app-pricing-action {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: var(--button-bg);
+  color: var(--button-text);
   font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.app-pricing-action svg {
+  width: 15px;
+}
+
+.share-feedback {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 10;
+  margin: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--surface-menu);
+  box-shadow: var(--shadow-panel);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 10px 14px;
 }
 
 .app-workspace {
@@ -227,18 +297,37 @@
 
 .app-shell--collapsed .app-brand-label,
 .app-shell--collapsed .app-nav-label,
-.app-shell--collapsed .app-progress-card {
+.app-shell--collapsed .app-sidebar-footer {
   display: none;
 }
 
 .app-shell--collapsed .app-sidebar {
+  align-items: center;
   padding-right: 10px;
   padding-left: 10px;
 }
 
-.app-shell--collapsed .app-brand,
+.app-shell--collapsed .app-sidebar-top {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 12px;
+}
+
+.app-shell--collapsed .app-brand {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+}
+
+.app-shell--collapsed .sidebar-toggle {
+  width: 40px;
+  height: 40px;
+}
+
 .app-shell--collapsed .app-nav-item {
   grid-template-columns: 1fr;
+  width: 48px;
+  min-height: 48px;
   justify-items: center;
   padding: 0;
 }

@@ -4,8 +4,6 @@ import {
   Expand,
   LogOut,
   MessageCircle,
-  Mic,
-  MicOff,
   Minimize,
   Send,
   Video,
@@ -32,10 +30,7 @@ import {
 import { useRealtimeVoice } from "@/features/realtime-voice/model/useRealtimeVoice";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
 import { getBrowserCapabilities } from "@/shared/lib/browserCapabilities";
-import {
-  getSpeechRecognitionConstructor,
-  type SpeechRecognitionInstance,
-} from "@/shared/lib/speechRecognition";
+import { VoiceInput } from "@/shared/ui/VoiceInput";
 
 import "./InterviewPage.css";
 
@@ -56,13 +51,10 @@ export function InterviewPage() {
   const [streamingReply, setStreamingReply] = useState("");
   const [pendingCandidateMessage, setPendingCandidateMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isDictating, setIsDictating] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const cameraStreamRef = useRef<MediaStream | null>(null);
-  const speechRecognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  const answerDraftRef = useRef(answerDraft);
   const cameraPreviewRef = useRef<HTMLVideoElement>(null);
   const realtimeAudioRef = useRef<HTMLAudioElement>(null);
   const realtimeVoice = useRealtimeVoice({
@@ -91,20 +83,9 @@ export function InterviewPage() {
   useEffect(
     () => () => {
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-      speechRecognitionRef.current?.stop();
     },
     [],
   );
-
-  useEffect(() => {
-    answerDraftRef.current = answerDraft;
-  }, [answerDraft]);
-
-  useEffect(() => {
-    if (isBusy && speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-    }
-  }, [isBusy]);
 
   useEffect(() => {
     const preview = cameraPreviewRef.current;
@@ -115,62 +96,6 @@ export function InterviewPage() {
     const playback = preview.play();
     if (playback) void playback.catch(() => {});
   }, [cameraEnabled]);
-
-  function toggleDictation() {
-    if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      return;
-    }
-
-    const SpeechRecognition = getSpeechRecognitionConstructor();
-    if (!SpeechRecognition) {
-      setActionError(
-        "Голосовой ввод не поддерживается. Продолжите отвечать текстом.",
-      );
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ru-RU";
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .slice(event.resultIndex)
-        .filter((result) => result.isFinal)
-        .map((result) => result[0].transcript.trim())
-        .filter(Boolean)
-        .join(" ");
-      if (!transcript) return;
-      const separator = answerDraftRef.current.trim() ? " " : "";
-      dispatch(
-        setSessionAnswerDraft({
-          sessionId: id,
-          value: `${answerDraftRef.current}${separator}${transcript}`,
-        }),
-      );
-    };
-    recognition.onerror = (event) => {
-      setActionError(
-        event.error === "not-allowed"
-          ? "Нет доступа к микрофону. Разрешите его в настройках браузера или продолжите текстом."
-          : "Не удалось распознать речь. Можно продолжить в текстовом режиме.",
-      );
-    };
-    recognition.onend = () => {
-      speechRecognitionRef.current = null;
-      setIsDictating(false);
-    };
-
-    try {
-      recognition.start();
-      speechRecognitionRef.current = recognition;
-      setActionError(null);
-      setIsDictating(true);
-    } catch {
-      setActionError("Не удалось включить голосовой ввод. Продолжите текстом.");
-    }
-  }
 
   async function toggleCamera() {
     if (cameraEnabled) {
@@ -518,24 +443,17 @@ export function InterviewPage() {
                   )}
                   <div className="composer-actions">
                     <div className="composer-tools">
-                      <button
-                        aria-label={
-                          isDictating
-                            ? "Остановить голосовой ввод"
-                            : "Начать голосовой ввод"
-                        }
-                        aria-pressed={isDictating}
-                        className={`voice-input ${isDictating ? "voice-input--active" : ""}`}
+                      <VoiceInput
+                        className="voice-input"
                         disabled={isBusy || realtimeVoice.isActive}
-                        onClick={toggleDictation}
-                        type="button"
-                      >
-                        {isDictating ? (
-                          <MicOff aria-hidden="true" />
-                        ) : (
-                          <Mic aria-hidden="true" />
-                        )}
-                      </button>
+                        onError={setActionError}
+                        onValueChange={(value) =>
+                          dispatch(
+                            setSessionAnswerDraft({ sessionId: id, value }),
+                          )
+                        }
+                        value={answerDraft}
+                      />
                       <button
                         aria-label={
                           realtimeVoice.isActive
@@ -625,7 +543,10 @@ export function InterviewPage() {
                         <strong>Пример ответа</strong>
                       </span>
                     </summary>
-                    <p className="hint-sample">{currentTurn.hintPack?.example ?? "Пример формируется для текущего вопроса."}</p>
+                    <p className="hint-sample">
+                      {currentTurn.hintPack?.example ??
+                        "Пример формируется для текущего вопроса."}
+                    </p>
                   </details>
                   <details className="plan-disclosure" open>
                     <summary>
@@ -634,8 +555,14 @@ export function InterviewPage() {
                         <strong>План интервью</strong>
                       </span>
                     </summary>
-                    <ol className="plan-list">{data.plan.map((item) => <li key={item.id}>{item.question}</li>)}</ol>
-                    <p>{currentTurn.index} из {totalQuestions} вопросов</p>
+                    <ol className="plan-list">
+                      {data.plan.map((item) => (
+                        <li key={item.id}>{item.question}</li>
+                      ))}
+                    </ol>
+                    <p>
+                      {currentTurn.index} из {totalQuestions} вопросов
+                    </p>
                   </details>
                 </div>
               </section>

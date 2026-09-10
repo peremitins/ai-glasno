@@ -81,6 +81,9 @@ describe("HistoryPage", () => {
 
     expect(await screen.findByText("Практика TypeScript")).toBeInTheDocument();
     expect(screen.queryByText("Практика React")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Открыть сессию Практика TypeScript/ }),
+    ).toHaveAttribute("href", "/interview/session_01");
   });
 
   it("показывает пустое состояние для фильтра без сессий", async () => {
@@ -99,7 +102,9 @@ describe("HistoryPage", () => {
 
     renderHistoryPage("/history?status=active");
 
-    expect(await screen.findByText("Активных сессий пока нет.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Активных сессий пока нет."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Начать сессию" })).toHaveAttribute(
       "href",
       "/interview/new",

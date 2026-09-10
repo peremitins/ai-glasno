@@ -40,7 +40,12 @@ type TurnInput = {
   metadata: Record<string, unknown>;
 };
 
-function questionPlan(role: string, count: number) {
+function questionPlan(
+  role: string,
+  count: number,
+  customQuestionsText?: string,
+  questionSourceMode?: Draft["questionSourceMode"],
+) {
   const base = [
     `Расскажите о последнем проекте в роли ${role}.`,
     "Как вы принимаете технические решения в условиях ограничений?",
@@ -48,9 +53,22 @@ function questionPlan(role: string, count: number) {
     "Расскажите о сложной ситуации в команде и вашем вкладе в её решение.",
     "Какие профессиональные навыки вы хотите развивать дальше?",
   ];
+  const custom =
+    questionSourceMode === "glasno" || !customQuestionsText
+      ? []
+      : customQuestionsText
+          .split(/\n{2,}|\n(?=\s*(?:\d+[.)]|[-•]))/)
+          .map((question) =>
+            question.replace(/^\s*(?:\d+[.)]|[-•])\s*/, "").trim(),
+          )
+          .filter(Boolean);
+  const questions =
+    questionSourceMode === "custom"
+      ? [...custom, ...base]
+      : [...custom, ...base];
   return Array.from({ length: count }, (_, index) => ({
     id: `plan-${index + 1}`,
-    question: base[index % base.length]!,
+    question: questions[index % questions.length]!,
   }));
 }
 
@@ -67,7 +85,12 @@ export class InterviewCreationService {
   async create(params: { owner: Owner; draft: LegacyDraft & Draft }) {
     const vacancy = params.draft.vacancy.trim();
     const role = vacancy.split("\n")[0]?.slice(0, 160).trim() || "специалист";
-    const plan = questionPlan(role, params.draft.questionsCount);
+    const plan = questionPlan(
+      role,
+      params.draft.questionsCount,
+      params.draft.customQuestionsText,
+      params.draft.questionSourceMode,
+    );
     const session = await this.repository.createSession({
       anonymousSessionId: params.owner.anonymousSessionId,
       userId: params.owner.userId ?? null,
@@ -91,6 +114,8 @@ export class InterviewCreationService {
         sessionGoal: params.draft.sessionGoal ?? "standard",
         focus: params.draft.focus ?? null,
         customQuestionsText: params.draft.customQuestionsText ?? null,
+        candidatePersona: params.draft.candidatePersona ?? null,
+        questionSourceMode: params.draft.questionSourceMode ?? "mixed",
       },
     });
     const firstQuestion = plan[0]!;
