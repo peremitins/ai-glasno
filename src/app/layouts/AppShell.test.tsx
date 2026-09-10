@@ -58,4 +58,21 @@ describe("AppShell", () => {
       "/",
     );
   });
+
+  it("не подсвечивает пункт «Подарить» на маршруте нового интервью", () => {
+    render(
+      <Provider store={createAppStore()}>
+        <MemoryRouter initialEntries={["/interview/new"]}>
+          <AppShell />
+        </MemoryRouter>
+      </Provider>,
+    );
+
+    expect(screen.getByRole("link", { name: "Новое интервью" })).toHaveClass(
+      "app-nav-item--active",
+    );
+    expect(screen.getByRole("link", { name: "Подарить" })).not.toHaveClass(
+      "app-nav-item--active",
+    );
+  });
 });
