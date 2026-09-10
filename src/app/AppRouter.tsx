@@ -9,6 +9,7 @@ import { InterviewPage } from "@/pages/InterviewPage";
 import { NewInterviewPage } from "@/pages/NewInterviewPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { PricingPage } from "@/pages/PricingPage";
 
 function AppRouter() {
   return (
@@ -17,6 +18,7 @@ function AppRouter() {
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="history" element={<HistoryPage />} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="interview/new" element={<NewInterviewPage />} />
         <Route path="interview/:id" element={<InterviewPage />} />
         <Route

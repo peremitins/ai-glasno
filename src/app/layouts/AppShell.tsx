@@ -14,7 +14,7 @@ import {
   CircleHelp,
   UserRound,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 
 import "./AppShell.css";
 
@@ -143,10 +143,13 @@ export function AppShell() {
             />
             <span className="app-nav-label">Тарифы</span>
           </NavLink>
-          <NavLink className={getNavigationClassName} to="/interview/new">
+          <Link
+            className="app-nav-item"
+            to="/pricing?checkout=gift&plan=pass_30d"
+          >
             <Gift aria-hidden="true" className="app-nav-icon" />
             <span className="app-nav-label">Подарить</span>
-          </NavLink>
+          </Link>
           <button
             aria-label="Поделиться"
             className="app-nav-item"
