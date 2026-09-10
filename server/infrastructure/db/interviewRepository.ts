@@ -132,4 +132,13 @@ export class InterviewRepository {
       .set({ status: "done" })
       .where(eq(schema.interviewSessions.id, sessionId));
   }
+
+  async deleteSession(sessionId: string) {
+    await this.database
+      .delete(schema.interviewTurns)
+      .where(eq(schema.interviewTurns.sessionId, sessionId));
+    await this.database
+      .delete(schema.interviewSessions)
+      .where(eq(schema.interviewSessions.id, sessionId));
+  }
 }

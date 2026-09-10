@@ -1,11 +1,10 @@
 .app-shell {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 20px;
   gap: 16px;
   position: relative;
-  overflow: hidden;
 }
 
 .app-shell::before,
@@ -15,7 +14,7 @@
   width: min(54vw, 760px);
   height: min(54vw, 760px);
   border-radius: 50%;
-  content: "";
+  content: '';
   filter: blur(18px);
   pointer-events: none;
 }
@@ -118,6 +117,7 @@
   align-content: start;
   gap: 6px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .app-nav-item {

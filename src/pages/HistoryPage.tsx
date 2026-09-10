@@ -1,118 +1,204 @@
-import { Link, useSearchParams } from "react-router";
+import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 
-import { useGetSessionsQuery } from "@/entities/session/api/sessionApi";
 import {
-  getSessionStatusFilter,
-  setSessionStatusFilter,
-  type SessionStatusFilter,
-} from "@/entities/session/model/historyFilters";
-import { selectSessionsByStatus } from "@/entities/session/model/selectors";
+  useDeleteHistorySessionMutation,
+  useGetHistorySessionsQuery,
+} from "@/entities/session/api/sessionApi";
+import type { InterviewHistoryItem } from "@/entities/session/model/types";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
 
 import "./HistoryPage.css";
 
-const filters: Array<{ value: SessionStatusFilter; label: string }> = [
-  { value: "all", label: "Все" },
-  { value: "active", label: "Активные" },
-  { value: "completed", label: "Завершённые" },
-];
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "short",
+  }).format(new Date(value));
+}
 
-function getEmptyMessage(status: SessionStatusFilter) {
-  if (status === "active") return "Активных сессий пока нет.";
-  if (status === "completed") return "Завершённых сессий пока нет.";
-  return "Сессий пока нет.";
+function getSessionPath(session: InterviewHistoryItem) {
+  return `/interview/${session.id}`;
+}
+
+function getActionLabel(session: InterviewHistoryItem) {
+  if (session.status === "running") return "Продолжить";
+  return session.report?.id ? "Открыть отчёт" : "Открыть разбор";
+}
+
+function getProgress(session: InterviewHistoryItem) {
+  if (session.status === "completed" && session.report?.overallScore != null) {
+    return `${session.report.overallScore}/100`;
+  }
+
+  return `${session.answeredQuestions} из ${session.totalQuestions}`;
 }
 
 export function HistoryPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const status = getSessionStatusFilter(searchParams.get("status"));
-  const { data = [], error, isError, isLoading } = useGetSessionsQuery();
-  const sessions = selectSessionsByStatus(data, status);
+  const navigate = useNavigate();
+  const [sessionToDelete, setSessionToDelete] =
+    useState<InterviewHistoryItem | null>(null);
+  const {
+    data: sessions = [],
+    error,
+    isError,
+    isLoading,
+  } = useGetHistorySessionsQuery();
+  const [deleteSession, { error: deleteError, isLoading: isDeleting }] =
+    useDeleteHistorySessionMutation();
 
-  function handleFilterChange(value: string) {
-    const nextStatus = getSessionStatusFilter(value);
+  async function handleDelete() {
+    if (!sessionToDelete) return;
 
-    setSearchParams(setSessionStatusFilter(searchParams, nextStatus));
+    try {
+      await deleteSession(sessionToDelete.id).unwrap();
+      setSessionToDelete(null);
+    } catch {
+      // Сообщение API выводится в диалоге, чтобы пользователь мог повторить действие.
+    }
   }
 
   if (isLoading) {
     return (
       <section
         aria-busy="true"
-        aria-label="Загрузка истории сессий"
+        aria-label="Загрузка истории"
         className="history-page"
         role="status"
       >
         <span className="sr-only">Загрузка истории сессий…</span>
-        <span className="history-skeleton" />
-        <span className="history-skeleton" />
-        <span className="history-skeleton" />
+        <div className="history-panel glass-frame">
+          <span className="history-skeleton" />
+          <span className="history-skeleton" />
+          <span className="history-skeleton" />
+        </div>
       </section>
     );
   }
 
-  if (isError) {
-    return <p role="alert">{getApiErrorMessage(error)}</p>;
-  }
+  if (isError) return <p role="alert">{getApiErrorMessage(error)}</p>;
 
   return (
     <section className="history-page">
-      <header className="history-page__head">
-        <p className="panel-label">История</p>
-        <h1>История сессий</h1>
-        <p>Возвращайтесь к завершённым и активным сессиям.</p>
-      </header>
-
-      <div className="history-filter">
-        <label htmlFor="session-status">Статус</label>
-        <select
-          className="history-filter__select"
-          id="session-status"
-          onChange={(event) => handleFilterChange(event.target.value)}
-          value={status}
-        >
-          {filters.map((filter) => (
-            <option key={filter.value} value={filter.value}>
-              {filter.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {sessions.length ? (
-        <ul className="history-list glass-frame" aria-label="Список сессий">
-          {sessions.map((session) => (
-            <li key={session.id}>
-              <Link
-                aria-label={`Открыть сессию ${session.title}`}
-                className="history-row"
-                to={`/interview/${session.id}`}
-              >
-                <span>
-                  <strong>{session.title}</strong>
-                  <small>
-                    {session.status === "completed"
-                      ? "Завершена"
-                      : "В процессе"}
-                  </small>
-                </span>
-                <b>
-                  {session.status === "completed"
-                    ? "Открыть разбор"
-                    : "Продолжить"}
-                </b>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="history-panel glass-frame">
+          <div className="history-list" aria-label="Список сессий">
+            {sessions.map((session) => {
+              const path = getSessionPath(session);
+
+              return (
+                <article
+                  aria-label={`Открыть сессию ${session.title}`}
+                  className="history-row"
+                  key={session.id}
+                  onClick={() => navigate(path)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") navigate(path);
+                    if (event.key === " ") {
+                      event.preventDefault();
+                      navigate(path);
+                    }
+                  }}
+                  role="link"
+                  tabIndex={0}
+                >
+                  <div className="history-row__main">
+                    <div className="history-row__badges">
+                      <span className="history-status">
+                        {session.status === "running"
+                          ? "В процессе"
+                          : "Завершено"}
+                      </span>
+                      <span className="history-mode">
+                        Вы —{" "}
+                        {session.trainingMode === "candidate"
+                          ? "кандидат"
+                          : "интервьюер"}
+                      </span>
+                    </div>
+                    <h1>{session.title}</h1>
+                    {session.subtitle && <p>{session.subtitle}</p>}
+                  </div>
+
+                  <div className="history-row__meta">
+                    <time dateTime={session.createdAt}>
+                      {formatDate(session.createdAt)}
+                    </time>
+                    <strong>{getProgress(session)}</strong>
+                  </div>
+
+                  <div
+                    className="history-row__actions"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Link className="history-action" to={path}>
+                      {getActionLabel(session)}
+                    </Link>
+                    <button
+                      aria-label={`Удалить сессию ${session.title}`}
+                      className="history-delete"
+                      onClick={() => setSessionToDelete(session)}
+                      type="button"
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
       ) : (
         <section className="history-empty glass-frame">
-          <h2>{getEmptyMessage(status)}</h2>
-          <p>Новая практика появится здесь после запуска сессии.</p>
+          <h1>Сессий пока нет</h1>
+          <p>Новая практика появится здесь после запуска репетиции.</p>
           <Link className="primary-action" to="/interview/new">
-            Начать сессию
+            Начать репетицию
           </Link>
         </section>
+      )}
+
+      {sessionToDelete && (
+        <div className="history-dialog-backdrop" role="presentation">
+          <section
+            aria-labelledby="history-delete-title"
+            aria-modal="true"
+            className="history-dialog glass-frame"
+            role="dialog"
+          >
+            <h2 id="history-delete-title">Удалить сессию?</h2>
+            <p>
+              История «{sessionToDelete.title}» будет удалена без возможности
+              восстановления.
+            </p>
+            {deleteError && (
+              <p className="history-dialog__error" role="alert">
+                {getApiErrorMessage(deleteError)}
+              </p>
+            )}
+            <div className="history-dialog__actions">
+              <button
+                className="history-dialog__cancel"
+                disabled={isDeleting}
+                onClick={() => setSessionToDelete(null)}
+                type="button"
+              >
+                Отмена
+              </button>
+              <button
+                className="history-dialog__confirm"
+                disabled={isDeleting}
+                onClick={() => void handleDelete()}
+                type="button"
+              >
+                {isDeleting ? "Удаление…" : "Удалить"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </section>
   );
