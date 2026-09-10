@@ -35,12 +35,30 @@ describe("NewInterviewPage", () => {
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
     await user.click(
-      screen.getByRole("combobox", { name: "Профессия или роль" }),
+      screen.getByRole("combobox", { name: "Роль или должность" }),
     );
 
     expect(
       await screen.findByRole("option", { name: /Frontend-разработчик/ }),
     ).toBeVisible();
+  });
+
+  it("находит роль по алиасу из полного каталога профессий", async () => {
+    const user = userEvent.setup();
+
+    renderNewInterviewPage();
+    await user.click(screen.getByRole("tab", { name: "Вручную" }));
+    await user.type(
+      screen.getByRole("combobox", { name: "Роль или должность" }),
+      "qa",
+    );
+
+    expect(
+      await screen.findByRole("option", { name: /Тестировщик/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Информационные технологии").length,
+    ).toBeGreaterThan(0);
   });
 
   it("собирает ручной контекст по профессии и выбранным тегам", async () => {
@@ -49,7 +67,7 @@ describe("NewInterviewPage", () => {
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
     await user.type(
-      screen.getByRole("combobox", { name: "Профессия или роль" }),
+      screen.getByRole("combobox", { name: "Роль или должность" }),
       "Frontend-разработчик",
     );
 
@@ -83,7 +101,7 @@ describe("NewInterviewPage", () => {
     const user = userEvent.setup();
 
     renderNewInterviewPage();
-    await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
+    await user.click(screen.getByRole("button", { name: "Начать интервью" }));
 
     expect(
       await screen.findByText("Опишите вакансию не короче 10 символов"),
@@ -106,8 +124,8 @@ describe("NewInterviewPage", () => {
       screen.getByLabelText("Коротко о себе"),
       "Разрабатываю приложения на React и TypeScript.",
     );
-    await user.click(screen.getByRole("radio", { name: "Senior" }));
-    await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
+    await user.click(screen.getByRole("radio", { name: "Эксперт (Senior)" }));
+    await user.click(screen.getByRole("button", { name: "Начать интервью" }));
 
     expect(
       await screen.findByRole("heading", { name: "Senior Frontend Developer" }),
@@ -130,7 +148,7 @@ describe("NewInterviewPage", () => {
       screen.getByLabelText("Коротко о себе"),
       "Разрабатываю приложения на React и TypeScript.",
     );
-    await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
+    await user.click(screen.getByRole("button", { name: "Начать интервью" }));
 
     expect(await screen.findByTestId("location")).toHaveTextContent(
       "/interview/session_03",
@@ -143,12 +161,12 @@ describe("NewInterviewPage", () => {
     renderNewInterviewPage();
     await user.click(screen.getByRole("tab", { name: "Вручную" }));
     await user.click(
-      screen.getByRole("combobox", { name: "Профессия или роль" }),
+      screen.getByRole("combobox", { name: "Роль или должность" }),
     );
     await user.click(
       await screen.findByRole("option", { name: /Frontend-разработчик/ }),
     );
-    await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
+    await user.click(screen.getByRole("button", { name: "Начать интервью" }));
 
     expect(await screen.findByTestId("location")).toHaveTextContent(
       "/interview/session_03",
@@ -165,7 +183,7 @@ describe("NewInterviewPage", () => {
     );
 
     expect(screen.getByLabelText("Коротко о себе")).toHaveValue("");
-    expect(await screen.findByText("Предпросмотр резюме")).toBeInTheDocument();
+    expect(await screen.findByText("Содержимое резюме")).toBeInTheDocument();
     expect(
       screen.getByText("Разрабатываю интерфейсы на React и TypeScript."),
     ).toBeInTheDocument();

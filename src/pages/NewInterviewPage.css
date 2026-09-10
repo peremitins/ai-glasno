@@ -352,7 +352,8 @@
   right: 0;
   left: 0;
   z-index: 100;
-  overflow: hidden;
+  max-height: min(420px, calc(100vh - 132px));
+  overflow: auto;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-control);
   background: var(--surface-menu);
@@ -383,6 +384,13 @@
 .role-menu p {
   color: var(--text-muted);
   font-size: 11px;
+}
+.tag-field > small {
+  display: block;
+  margin: 4px 0 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 .role-menu p {
   margin: 0;

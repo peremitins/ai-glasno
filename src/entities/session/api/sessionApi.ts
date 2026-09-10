@@ -1,4 +1,4 @@
-import { baseApi, toApiError } from "@/shared/api/baseApi";
+import { API_BASE_URL, baseApi, toApiError } from "@/shared/api/baseApi";
 
 import { normalizeInterviewWorkspace } from "./interviewTransport";
 
@@ -42,7 +42,11 @@ export const sessionApi = baseApi.injectEndpoints({
       query: (file) => {
         const body = new FormData();
         body.append("file", file);
-        return { url: "interview/resume/extract", method: "POST", body };
+        return {
+          url: resolveInterviewEndpoint("resume/extract"),
+          method: "POST",
+          body,
+        };
       },
       transformResponse: (response: unknown) =>
         uploadedTextSchema.parse(response),
@@ -53,7 +57,7 @@ export const sessionApi = baseApi.injectEndpoints({
         const body = new FormData();
         body.append("file", file);
         return {
-          url: "interview/custom-questions/extract",
+          url: resolveInterviewEndpoint("custom-questions/extract"),
           method: "POST",
           body,
         };
@@ -129,6 +133,12 @@ export const sessionApi = baseApi.injectEndpoints({
     ),
   }),
 });
+
+export function resolveInterviewEndpoint(path: string, baseUrl = API_BASE_URL) {
+  return new URL(baseUrl).pathname.endsWith("/interview")
+    ? path
+    : `interview/${path}`;
+}
 
 export const {
   useCompleteSessionMutation,

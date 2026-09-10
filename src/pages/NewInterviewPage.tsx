@@ -27,6 +27,8 @@ import {
   saveDraft,
 } from "@/features/interview/model/interviewSlice";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
+import { PROFESSIONAL_ROLE_OPTIONS } from "@/shared/config/professionalRoles";
+import { getRoleContextTags } from "@/shared/lib/roleContextTags";
 import { VoiceTextarea } from "@/shared/ui/VoiceTextarea";
 import "./NewInterviewPage.css";
 
@@ -36,44 +38,49 @@ type Goal = "quick" | "standard" | "deep";
 type InterviewerMode = "soft" | "neutral" | "strict";
 type Focus = NonNullable<AdvancedSessionCreationRequest["focus"]> | null;
 
-const roles = [
-  {
-    name: "Frontend-разработчик",
-    tags: ["React", "TypeScript", "JavaScript", "CSS"],
-  },
-  {
-    name: "Backend-разработчик",
-    tags: ["Node.js", "API", "SQL", "Архитектура"],
-  },
-  { name: "Product-менеджер", tags: ["Discovery", "Метрики", "Коммуникация"] },
-  { name: "UX/UI-дизайнер", tags: ["Figma", "Исследования", "Дизайн-системы"] },
-] as const;
+const MAX_VISIBLE_ROLE_OPTIONS = 64;
 const goals = [
-  { value: "quick", title: "Быстро", meta: "3 вопроса · 15 минут" },
-  { value: "standard", title: "Стандарт", meta: "6 вопросов · 45 минут" },
-  { value: "deep", title: "Глубоко", meta: "10 вопросов · 60 минут" },
+  { value: "quick", title: "Быстро", meta: "3 вопроса" },
+  { value: "standard", title: "Стандарт", meta: "6 вопросов" },
+  { value: "deep", title: "Глубоко", meta: "10 вопросов" },
 ] as const;
 const levels = [
-  { value: "junior", title: "Junior", meta: "Начало карьеры" },
-  { value: "middle", title: "Middle", meta: "Самостоятельный специалист" },
-  { value: "senior", title: "Senior", meta: "Экспертный уровень" },
+  {
+    value: "junior",
+    title: "Начинающий (Junior)",
+    meta: "Первые шаги в профессии",
+  },
+  { value: "middle", title: "Уверенный (Middle)", meta: "Есть опыт и кейсы" },
+  { value: "senior", title: "Эксперт (Senior)", meta: "Лидерский уровень" },
 ] as const;
 const modes = [
-  { value: "soft", title: "Поддерживающий", meta: "Помогает раскрыться" },
-  { value: "neutral", title: "Нейтральный", meta: "Деловой разговор" },
-  { value: "strict", title: "Строгий", meta: "Требовательный формат" },
+  {
+    value: "soft",
+    title: "Мягкий",
+    meta: "Спокойный тон и поддерживающие уточнения без давления.",
+  },
+  {
+    value: "neutral",
+    title: "Нейтральный",
+    meta: "Деловой тон и ровный уровень уточняющих вопросов.",
+  },
+  {
+    value: "strict",
+    title: "Строгий",
+    meta: "Больше уточняющих вопросов и меньше терпимости к общим ответам.",
+  },
 ] as const;
 const focuses = [
   { value: null, title: "Смешанное" },
-  { value: "hr_screening", title: "HR-скрининг" },
-  { value: "professional", title: "Профильное" },
-  { value: "behavioral", title: "Поведенческое" },
-  { value: "salary_negotiation", title: "Зарплата" },
+  { value: "hr_screening", title: "Разговор с HR" },
+  { value: "professional", title: "Вопросы по профессии" },
+  { value: "behavioral", title: "Опыт и кейсы" },
+  { value: "salary_negotiation", title: "Зарплата и оффер" },
 ] as const;
 const personas = [
-  "Сильный и краткий",
+  "Лаконичный",
   "Многословный",
-  "Тревожный",
+  "Неуверенный",
   "Самоуверенный",
 ] as const;
 
@@ -116,22 +123,20 @@ export function NewInterviewPage() {
   const rolePickerRef = useRef<HTMLDivElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const questionsInputRef = useRef<HTMLInputElement>(null);
-  const matchingRole = useMemo(
-    () =>
-      roles.find(
-        (item) =>
-          item.name.toLocaleLowerCase() === role.trim().toLocaleLowerCase(),
-      ),
-    [role],
-  );
-  const roleTags = matchingRole?.tags ?? [];
-  const suggestedRoles = useMemo(
-    () =>
-      roles.filter((item) =>
-        item.name.toLocaleLowerCase().includes(role.trim().toLocaleLowerCase()),
-      ),
-    [role],
-  );
+  const roleTags = useMemo(() => getRoleContextTags(role), [role]);
+  const suggestedRoles = useMemo(() => {
+    const query = role.trim().toLocaleLowerCase();
+    const options = query
+      ? PROFESSIONAL_ROLE_OPTIONS.filter((item) =>
+          [item.name, item.categoryName, ...(item.aliases ?? [])]
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(query),
+        )
+      : PROFESSIONAL_ROLE_OPTIONS;
+
+    return options.slice(0, MAX_VISIBLE_ROLE_OPTIONS);
+  }, [role]);
 
   useEffect(() => {
     const next = { ...savedDraftRef.current, ...values };
@@ -229,17 +234,18 @@ export function NewInterviewPage() {
     const request: AdvancedSessionCreationRequest = {
       trainingMode,
       source,
-      resumeText: [
-        resumeExtractedText.trim()
-          ? `Резюме из файла «${resumeFileName}»:\n${resumeExtractedText.trim()}`
-          : "",
-        data.profile.trim()
-          ? `Дополнительно от кандидата:\n${data.profile.trim()}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n\n")
-        .slice(0, 15_000) || undefined,
+      resumeText:
+        [
+          resumeExtractedText.trim()
+            ? `Резюме из файла «${resumeFileName}»:\n${resumeExtractedText.trim()}`
+            : "",
+          data.profile.trim()
+            ? `Дополнительно от кандидата:\n${data.profile.trim()}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+          .slice(0, 15_000) || undefined,
       level: data.level,
       sessionGoal: goal,
       focus: focus ?? undefined,
@@ -333,11 +339,8 @@ export function NewInterviewPage() {
               </Field>
             ) : (
               <>
-                <Field label="Профессия или роль">
-                  <div
-                    className="role-combobox"
-                    ref={rolePickerRef}
-                  >
+                <Field label="Роль или должность">
+                  <div className="role-combobox" ref={rolePickerRef}>
                     <input
                       aria-autocomplete="list"
                       aria-controls="role-options"
@@ -347,17 +350,21 @@ export function NewInterviewPage() {
                         setIsRoleListOpen(true);
                       }}
                       onFocus={() => setIsRoleListOpen(true)}
-                      placeholder="Например, Frontend-разработчик"
+                      placeholder="Например: frontend-разработчик, бухгалтер, менеджер по продажам"
                       role="combobox"
                       value={role}
                     />
                     {isRoleListOpen && (
-                      <div className="role-menu" id="role-options" role="listbox">
+                      <div
+                        className="role-menu"
+                        id="role-options"
+                        role="listbox"
+                      >
                         {suggestedRoles.length ? (
                           suggestedRoles.map((item) => (
                             <button
                               aria-selected={role === item.name}
-                              key={item.name}
+                              key={`${item.categoryId}-${item.id}`}
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => {
                                 setRole(item.name);
@@ -367,19 +374,29 @@ export function NewInterviewPage() {
                               type="button"
                             >
                               <strong>{item.name}</strong>
-                              <span>{item.tags.join(" · ")}</span>
+                              <span>{item.categoryName}</span>
                             </button>
                           ))
                         ) : (
-                          <p>Продолжите вводить название роли.</p>
+                          <p>
+                            Ничего не найдено. Можно оставить свой вариант
+                            должности.
+                          </p>
                         )}
                       </div>
                     )}
                   </div>
                 </Field>
+                <p className="source-hint">
+                  Не нашли подходящий вариант? Просто оставьте свой текст.
+                </p>
                 {role.trim() && (
                   <div className="tag-field">
-                    <span>Контекст роли</span>
+                    <span>Уточнить контекст</span>
+                    <small>
+                      Подобрали под вашу роль. Отметьте подходящее или добавьте
+                      своё.
+                    </small>
                     <div className="context-tags">
                       {[
                         ...roleTags,
@@ -413,7 +430,7 @@ export function NewInterviewPage() {
                             addCustomTag();
                           }
                         }}
-                        placeholder="Добавить свой контекст"
+                        placeholder="Например: EdTech, enterprise, удалёнка"
                         value={customTag}
                       />
                       <button
@@ -431,7 +448,7 @@ export function NewInterviewPage() {
                   label="Описание вакансии"
                 >
                   <textarea
-                    placeholder="Название позиции, задачи, технологии и ожидания от кандидата"
+                    placeholder="Задачи, требования, стек, формат работы. Можно вставить весь текст вакансии."
                     {...form.register("vacancy")}
                   />
                 </Field>
@@ -448,7 +465,7 @@ export function NewInterviewPage() {
             <p className="source-hint">
               {trainingMode === "candidate"
                 ? "Необязательно. Без резюме вопросы будут более общими."
-                : "Настройте поведение кандидата для репетиции интервью."}
+                : "Загрузите реальное резюме или опишите кандидата. Так тренировка будет ближе к настоящему интервью."}
             </p>
             {trainingMode === "interviewer" && (
               <OptionGroup
@@ -473,15 +490,15 @@ export function NewInterviewPage() {
               />
               <label className="file-button" htmlFor="resume-file">
                 <FileText aria-hidden="true" />
-                <span>{resumeFileName || "Загрузить резюме"}</span>
+                <span>{resumeFileName || "Выберите файл"}</span>
               </label>
             </div>
             {(extractResumeState.isLoading || resumeExtractedText) && (
               <section className="resume-preview">
                 <div className="resume-preview__head">
                   <div className="resume-preview__title">
-                    <span>ВЫДЕРЖКА ИЗ ФАЙЛА</span>
-                    <strong>Предпросмотр резюме</strong>
+                    <span>ПРЕВЬЮ</span>
+                    <strong>Содержимое резюме</strong>
                   </div>
                   <div className="resume-preview__actions">
                     <small>
@@ -490,29 +507,37 @@ export function NewInterviewPage() {
                         : `${resumeExtractedText.length} символов`}
                     </small>
                     <button
-                      aria-label="Очистить резюме"
+                      aria-label="Очистить файл"
                       className="resume-preview__clear"
                       onClick={clearResumeFile}
                       type="button"
                     >
                       <X aria-hidden="true" />
-                      <span>Очистить</span>
+                      <span>Очистить файл</span>
                     </button>
                   </div>
                 </div>
                 {extractResumeState.isLoading ? (
-                  <div className="resume-preview__skeleton" aria-label="Извлекаем текст резюме">
+                  <div
+                    className="resume-preview__skeleton"
+                    aria-label="Извлекаем текст резюме"
+                  >
                     <span />
                     <span />
                     <span />
                   </div>
                 ) : (
                   <div className="resume-preview__body">
-                    {resumeExtractedText.split(/\n{2,}/).map((paragraph, index) => (
-                      <p className="resume-preview__paragraph" key={`${paragraph}-${index}`}>
-                        {paragraph}
-                      </p>
-                    ))}
+                    {resumeExtractedText
+                      .split(/\n{2,}/)
+                      .map((paragraph, index) => (
+                        <p
+                          className="resume-preview__paragraph"
+                          key={`${paragraph}-${index}`}
+                        >
+                          {paragraph}
+                        </p>
+                      ))}
                   </div>
                 )}
               </section>
@@ -522,19 +547,19 @@ export function NewInterviewPage() {
               label={
                 trainingMode === "candidate"
                   ? "Коротко о себе"
-                  : "Контекст кандидата"
+                  : "Что учесть в поведении"
               }
             >
               <VoiceTextarea
                 aria-label={
                   trainingMode === "candidate"
                     ? "Коротко о себе"
-                    : "Контекст кандидата"
+                    : "Что учесть в поведении"
                 }
                 onValueChange={(profile) =>
                   form.setValue("profile", profile, { shouldDirty: true })
                 }
-                placeholder="Опыт, навыки, проекты и важные детали для сценария"
+                placeholder="Например: 5 лет в B2B-продажах, вёл команду из 6 человек, запускал новое направление."
                 value={values.profile ?? ""}
               />
             </Field>
@@ -577,17 +602,27 @@ export function NewInterviewPage() {
             </div>
             <div className="custom-questions-content">
               {trainingMode === "interviewer" && (
-                <div aria-label="Источник вопросов" className="interviewer-scenario-grid" role="radiogroup">
+                <div
+                  aria-label="Источник вопросов"
+                  className="interviewer-scenario-grid"
+                  role="radiogroup"
+                >
                   {[
-                    { value: "mixed", title: "Смешанный" },
-                    { value: "custom", title: "Свой план" },
+                    { value: "mixed", title: "Смешанный план" },
+                    { value: "custom", title: "Мой план" },
                     { value: "free", title: "Свободное интервью" },
                   ].map((option) => (
                     <button
                       aria-checked={questionPlan === option.value}
-                      className={questionPlan === option.value ? "option-card option-card--active" : "option-card"}
+                      className={
+                        questionPlan === option.value
+                          ? "option-card option-card--active"
+                          : "option-card"
+                      }
                       key={option.value}
-                      onClick={() => setQuestionPlan(option.value as typeof questionPlan)}
+                      onClick={() =>
+                        setQuestionPlan(option.value as typeof questionPlan)
+                      }
                       role="radio"
                       type="button"
                     >
@@ -596,58 +631,64 @@ export function NewInterviewPage() {
                   ))}
                 </div>
               )}
-            {questionPlan !== "free" && (
-              <div className="custom-questions-grid">
-                <Field label="Что хотите потренировать">
-                  <VoiceTextarea
-                  aria-label="Свой план вопросов"
-                  className="compact-voice-textarea"
-                  onValueChange={setCustomQuestions}
-                  placeholder="Добавьте вопросы или темы, если хотите дополнить план"
-                  value={customQuestions}
-                />
-                </Field>
-                <div className="question-options">
-                  <div className="file-upload file-upload--compact">
-                    <input
-                      accept=".pdf,.docx,.txt,.md,.csv,.xls,.xlsx"
-                      aria-label="Добавить файл с вопросами"
-                      className="file-input"
-                      disabled={extractQuestionsState.isLoading}
-                      id="questions-file"
-                      onChange={(event) =>
-                        void handleQuestionsFile(event.target.files?.[0])
+              {questionPlan !== "free" && (
+                <div className="custom-questions-grid">
+                  <Field label="Что хотите потренировать">
+                    <VoiceTextarea
+                      aria-label="Свой план вопросов"
+                      className="compact-voice-textarea"
+                      onValueChange={setCustomQuestions}
+                      placeholder={
+                        "Например:\nРасскажите про конфликт со стейкхолдером\nКак объяснить проваленный проект?\nСпроси про зарплатные ожидания"
                       }
-                      ref={questionsInputRef}
-                      type="file"
+                      value={customQuestions}
                     />
-                    <label className="file-button" htmlFor="questions-file">
-                      <Upload aria-hidden="true" size={16} />
-                      <span>{questionsFileName || "Добавить файл"}</span>
-                    </label>
-                  </div>
-                  {trainingMode === "candidate" && (
-                    <label className="toggle-option">
+                  </Field>
+                  <div className="question-options">
+                    <div className="file-upload file-upload--compact">
                       <input
-                        checked={questionPlan === "custom"}
+                        accept=".pdf,.docx,.txt,.md,.csv,.xls,.xlsx"
+                        aria-label="Добавить файл с вопросами"
+                        className="file-input"
+                        disabled={extractQuestionsState.isLoading}
+                        id="questions-file"
                         onChange={(event) =>
-                          setQuestionPlan(event.target.checked ? "custom" : "mixed")
+                          void handleQuestionsFile(event.target.files?.[0])
                         }
-                        type="checkbox"
+                        ref={questionsInputRef}
+                        type="file"
                       />
-                      <span className="toggle-switch" aria-hidden="true" />
-                      <strong>Только мои вопросы</strong>
-                    </label>
-                  )}
-                  {extractQuestionsState.isLoading && (
-                    <p className="file-status">Извлекаем вопросы…</p>
-                  )}
-                  {questionsFileText && !extractQuestionsState.isLoading && (
-                    <p className="file-status">Текст из файла добавлен в поле вопросов.</p>
-                  )}
+                      <label className="file-button" htmlFor="questions-file">
+                        <Upload aria-hidden="true" size={16} />
+                        <span>{questionsFileName || "Добавить файл"}</span>
+                      </label>
+                    </div>
+                    {trainingMode === "candidate" && (
+                      <label className="toggle-option">
+                        <input
+                          checked={questionPlan === "custom"}
+                          onChange={(event) =>
+                            setQuestionPlan(
+                              event.target.checked ? "custom" : "mixed",
+                            )
+                          }
+                          type="checkbox"
+                        />
+                        <span className="toggle-switch" aria-hidden="true" />
+                        <strong>Только мои вопросы</strong>
+                      </label>
+                    )}
+                    {extractQuestionsState.isLoading && (
+                      <p className="file-status">Извлекаем вопросы…</p>
+                    )}
+                    {questionsFileText && !extractQuestionsState.isLoading && (
+                      <p className="file-status">
+                        Текст из файла добавлен в поле вопросов.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </section>
         </div>
@@ -658,7 +699,7 @@ export function NewInterviewPage() {
         )}
         <footer className="sticky-start-bar">
           <div>
-            <p>Настройки можно изменить перед следующим интервью.</p>
+            <p>Сценарий готовится по выбранным параметрам</p>
             <div className="summary-chips">
               <span>
                 {goal === "quick"
@@ -672,7 +713,10 @@ export function NewInterviewPage() {
             </div>
           </div>
           <button disabled={createState.isLoading} type="submit">
-            Начать репетицию <Sparkles aria-hidden="true" />
+            {trainingMode === "candidate"
+              ? "Начать интервью"
+              : "Начать тренировку"}{" "}
+            <Sparkles aria-hidden="true" />
           </button>
         </footer>
       </section>
@@ -685,9 +729,9 @@ export function NewInterviewPage() {
           <div className="interview-start-card glass-frame">
             <FileText aria-hidden="true" />
             <div>
-              <p className="panel-label">ПОДГОТОВКА</p>
-              <h2>Собираем сценарий интервью</h2>
-              <p>Проверяем контекст, опыт кандидата и план вопросов.</p>
+              <p className="panel-label">СОБИРАЕМ ИНТЕРВЬЮ</p>
+              <h2>Готовим сценарий интервью</h2>
+              <p>Анализируем вакансию, опыт кандидата и план вопросов.</p>
             </div>
           </div>
         </div>
