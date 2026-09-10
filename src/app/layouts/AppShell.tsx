@@ -5,14 +5,16 @@ import {
   ChevronRight,
   CirclePlus,
   Clock3,
+  Gift,
   House,
   Moon,
+  PanelTop,
+  Share2,
   Sun,
+  CircleHelp,
   UserRound,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
-
-import { useAppSelector } from "@/app/hooks";
 
 import "./AppShell.css";
 
@@ -22,19 +24,19 @@ const navigation = [
   { to: "/history", label: "История", Icon: Clock3 },
 ];
 
+const unavailableNavigation = [{ label: "База вопросов", Icon: CircleHelp }];
+
 function getNavigationClassName({ isActive }: { isActive: boolean }) {
   return isActive ? "app-nav-item app-nav-item--active" : "app-nav-item";
 }
 
 export function AppShell() {
-  const user = useAppSelector((state) => state.auth.user);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLightTheme, setIsLightTheme] = useState(false);
-  const profilePath = user ? "/profile" : "/auth";
-  const profileLabel = user ? "Профиль" : "Войти";
-  const profileButtonLabel = user
-    ? "Открыть профиль"
-    : "Открыть вход в аккаунт";
+  const [shareMessage, setShareMessage] = useState("");
+  const profilePath = "/profile";
+  const profileLabel = "Профиль";
+  const profileButtonLabel = "Открыть профиль";
 
   function toggleTheme() {
     setIsLightTheme((currentValue) => {
@@ -46,6 +48,31 @@ export function AppShell() {
 
       return nextValue;
     });
+  }
+
+  async function shareService() {
+    const shareData = {
+      title: "Гласно",
+      text: "Репетиция собеседования по вашей вакансии",
+      url: typeof window === "undefined" ? "" : window.location.origin,
+    };
+
+    try {
+      if (
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function"
+      ) {
+        await navigator.share(shareData);
+        setShareMessage("Ссылка отправлена");
+      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareData.url);
+        setShareMessage("Ссылка скопирована");
+      } else {
+        setShareMessage("Поделиться ссылкой можно из адресной строки");
+      }
+    } catch {
+      setShareMessage("");
+    }
   }
 
   return (
@@ -96,6 +123,39 @@ export function AppShell() {
               <span className="app-nav-label">{label}</span>
             </NavLink>
           ))}
+          {unavailableNavigation.map(({ Icon, label }) => (
+            <button
+              aria-label={label}
+              className="app-nav-item app-nav-item--unavailable"
+              disabled
+              key={label}
+              title="Раздел появится в следующем этапе"
+              type="button"
+            >
+              <Icon aria-hidden="true" className="app-nav-icon" />
+              <span className="app-nav-label">{label}</span>
+            </button>
+          ))}
+          <NavLink className={getNavigationClassName} to="/pricing">
+            <ChartNoAxesColumnIncreasing
+              aria-hidden="true"
+              className="app-nav-icon"
+            />
+            <span className="app-nav-label">Тарифы</span>
+          </NavLink>
+          <NavLink className={getNavigationClassName} to="/interview/new">
+            <Gift aria-hidden="true" className="app-nav-icon" />
+            <span className="app-nav-label">Подарить</span>
+          </NavLink>
+          <button
+            aria-label="Поделиться"
+            className="app-nav-item"
+            onClick={() => void shareService()}
+            type="button"
+          >
+            <Share2 aria-hidden="true" className="app-nav-icon" />
+            <span className="app-nav-label">Поделиться</span>
+          </button>
           <NavLink className={getNavigationClassName} to={profilePath}>
             <UserRound aria-hidden="true" className="app-nav-icon" />
             <span className="app-nav-label">{profileLabel}</span>
@@ -104,16 +164,29 @@ export function AppShell() {
 
         <div className="app-sidebar-footer">
           <div className="app-progress-card">
-            <ChartNoAxesColumnIncreasing aria-hidden="true" />
-            <div>
-              <span className="app-nav-label">Практика</span>
-              <strong className="app-nav-label">
-                Начните первую репетицию
-              </strong>
+            <p className="app-nav-label">Ваш прогресс</p>
+            <div className="app-progress-metrics">
+              <span>
+                <strong>2</strong>
+                <small>готово</small>
+              </span>
+              <span>
+                <strong>36/100</strong>
+                <small>средний</small>
+              </span>
             </div>
           </div>
+          <NavLink className="app-pricing-action" to="/pricing">
+            <PanelTop aria-hidden="true" />
+            <span className="app-nav-label">Открыть тарифы</span>
+          </NavLink>
         </div>
       </aside>
+      {shareMessage && (
+        <p className="share-feedback" role="status">
+          {shareMessage}
+        </p>
+      )}
 
       <section className="app-workspace">
         <header className="app-topbar glass-frame glass-frame--soft">

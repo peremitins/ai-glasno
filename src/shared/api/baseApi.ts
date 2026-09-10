@@ -33,6 +33,13 @@ export function normalizeApiBaseUrl(
   return new URL(baseUrl, origin).toString().replace(/\/$/, "");
 }
 
+export function resolveSameOriginApiUrl(
+  path: string,
+  origin = getCurrentOrigin(),
+) {
+  return new URL(`/api/${path.replace(/^\/+/, "")}`, origin).toString();
+}
+
 export const API_BASE_URL = normalizeApiBaseUrl(
   import.meta.env.VITE_API_BASE_URL ?? "/api",
 );

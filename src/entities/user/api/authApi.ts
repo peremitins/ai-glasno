@@ -1,5 +1,9 @@
 import { setUser } from "@/features/auth/model/authSlice";
-import { baseApi, toApiError } from "@/shared/api/baseApi";
+import {
+  baseApi,
+  resolveSameOriginApiUrl,
+  toApiError,
+} from "@/shared/api/baseApi";
 
 import type { AuthUser } from "../model/types";
 
@@ -32,7 +36,7 @@ export const authApi = baseApi.injectEndpoints({
       { email: string }
     >({
       query: (body) => ({
-        url: "auth/email/start",
+        url: resolveSameOriginApiUrl("auth/email/start"),
         method: "POST",
         body,
       }),
@@ -43,7 +47,7 @@ export const authApi = baseApi.injectEndpoints({
       VerifyEmailLoginRequest
     >({
       query: (body) => ({
-        url: "auth/email/verify",
+        url: resolveSameOriginApiUrl("auth/email/verify"),
         method: "POST",
         body,
       }),

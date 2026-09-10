@@ -107,6 +107,10 @@ describe("HomePage", () => {
       "/history",
     );
     expect(screen.getByText("Frontend-разработчик")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Что улучшить перед интервью" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Пройти весь план интервью/)).toBeInTheDocument();
   });
 
   it("собирает каркас первого запуска с резюме и сценариями", async () => {
@@ -170,7 +174,13 @@ describe("HomePage", () => {
     const user = userEvent.setup();
     server.use(
       http.get(`${API_BASE_URL}/dashboard`, () =>
-        HttpResponse.json(createDashboardFixture({ activeSessions: 0, completedSessions: 0, recentSessions: [] })),
+        HttpResponse.json(
+          createDashboardFixture({
+            activeSessions: 0,
+            completedSessions: 0,
+            recentSessions: [],
+          }),
+        ),
       ),
     );
 
