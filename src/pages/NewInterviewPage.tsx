@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   BriefcaseBusiness,
   FileText,
@@ -7,108 +7,108 @@ import {
   Sparkles,
   Upload,
   X,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useForm, useWatch } from "react-hook-form";
-import { useNavigate } from "react-router";
-import { useAppDispatch, useAppSelector } from "@/app/hooks";
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { useNavigate } from 'react-router';
+import { useAppDispatch, useAppSelector } from '@/app/hooks';
 import {
   useCreateSessionMutation,
   useExtractQuestionsMutation,
   useExtractResumeMutation,
-} from "@/entities/session/api/sessionApi";
+} from '@/entities/session/api/sessionApi';
 import {
   sessionDraftSchema,
   type AdvancedSessionCreationRequest,
   type SessionDraft,
-} from "@/entities/session/model/types";
+} from '@/entities/session/model/types';
 import {
   clearDraft,
   saveDraft,
-} from "@/features/interview/model/interviewSlice";
-import { getApiErrorMessage } from "@/shared/api/baseApi";
-import { PROFESSIONAL_ROLE_OPTIONS } from "@/shared/config/professionalRoles";
-import { getRoleContextTags } from "@/shared/lib/roleContextTags";
-import { VoiceTextarea } from "@/shared/ui/VoiceTextarea";
-import "./NewInterviewPage.css";
+} from '@/features/interview/model/interviewSlice';
+import { getApiErrorMessage } from '@/shared/api/baseApi';
+import { PROFESSIONAL_ROLE_OPTIONS } from '@/shared/config/professionalRoles';
+import { getRoleContextTags } from '@/shared/lib/roleContextTags';
+import { VoiceTextarea } from '@/shared/ui/VoiceTextarea';
+import './NewInterviewPage.css';
 
-type TrainingMode = "candidate" | "interviewer";
-type SourceMode = "hh_url" | "manual";
-type Goal = "quick" | "standard" | "deep";
-type InterviewerMode = "soft" | "neutral" | "strict";
-type Focus = NonNullable<AdvancedSessionCreationRequest["focus"]> | null;
+type TrainingMode = 'candidate' | 'interviewer';
+type SourceMode = 'hh_url' | 'manual';
+type Goal = 'quick' | 'standard' | 'deep';
+type InterviewerMode = 'soft' | 'neutral' | 'strict';
+type Focus = NonNullable<AdvancedSessionCreationRequest['focus']> | null;
 
 const MAX_VISIBLE_ROLE_OPTIONS = 64;
 const goals = [
-  { value: "quick", title: "Быстро", meta: "3 вопроса" },
-  { value: "standard", title: "Стандарт", meta: "6 вопросов" },
-  { value: "deep", title: "Глубоко", meta: "10 вопросов" },
+  { value: 'quick', title: 'Быстро', meta: '3 вопроса' },
+  { value: 'standard', title: 'Стандарт', meta: '6 вопросов' },
+  { value: 'deep', title: 'Глубоко', meta: '10 вопросов' },
 ] as const;
 const levels = [
   {
-    value: "junior",
-    title: "Начинающий (Junior)",
-    meta: "Первые шаги в профессии",
+    value: 'junior',
+    title: 'Начинающий (Junior)',
+    meta: 'Первые шаги в профессии',
   },
-  { value: "middle", title: "Уверенный (Middle)", meta: "Есть опыт и кейсы" },
-  { value: "senior", title: "Эксперт (Senior)", meta: "Лидерский уровень" },
+  { value: 'middle', title: 'Уверенный (Middle)', meta: 'Есть опыт и кейсы' },
+  { value: 'senior', title: 'Эксперт (Senior)', meta: 'Лидерский уровень' },
 ] as const;
 const modes = [
   {
-    value: "soft",
-    title: "Мягкий",
-    meta: "Спокойный тон и поддерживающие уточнения без давления.",
+    value: 'soft',
+    title: 'Мягкий',
+    meta: 'Спокойный тон и поддерживающие уточнения без давления.',
   },
   {
-    value: "neutral",
-    title: "Нейтральный",
-    meta: "Деловой тон и ровный уровень уточняющих вопросов.",
+    value: 'neutral',
+    title: 'Нейтральный',
+    meta: 'Деловой тон и ровный уровень уточняющих вопросов.',
   },
   {
-    value: "strict",
-    title: "Строгий",
-    meta: "Больше уточняющих вопросов и меньше терпимости к общим ответам.",
+    value: 'strict',
+    title: 'Строгий',
+    meta: 'Больше уточняющих вопросов и меньше терпимости к общим ответам.',
   },
 ] as const;
 const focuses = [
-  { value: null, title: "Смешанное" },
-  { value: "hr_screening", title: "Разговор с HR" },
-  { value: "professional", title: "Вопросы по профессии" },
-  { value: "behavioral", title: "Опыт и кейсы" },
-  { value: "salary_negotiation", title: "Зарплата и оффер" },
+  { value: null, title: 'Смешанное' },
+  { value: 'hr_screening', title: 'Разговор с HR' },
+  { value: 'professional', title: 'Вопросы по профессии' },
+  { value: 'behavioral', title: 'Опыт и кейсы' },
+  { value: 'salary_negotiation', title: 'Зарплата и оффер' },
 ] as const;
 const personas = [
-  "Лаконичный",
-  "Многословный",
-  "Неуверенный",
-  "Самоуверенный",
+  'Лаконичный',
+  'Многословный',
+  'Неуверенный',
+  'Самоуверенный',
 ] as const;
 
 export function NewInterviewPage() {
   const dispatch = useAppDispatch();
   const draft = useAppSelector((state) => state.interview.draft);
   const navigate = useNavigate();
-  const [trainingMode, setTrainingMode] = useState<TrainingMode>("candidate");
-  const [sourceMode, setSourceMode] = useState<SourceMode>("hh_url");
+  const [trainingMode, setTrainingMode] = useState<TrainingMode>('candidate');
+  const [sourceMode, setSourceMode] = useState<SourceMode>('hh_url');
   const [isRoleListOpen, setIsRoleListOpen] = useState(false);
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [customTag, setCustomTag] = useState("");
-  const [goal, setGoal] = useState<Goal>("standard");
+  const [customTag, setCustomTag] = useState('');
+  const [goal, setGoal] = useState<Goal>('standard');
   const [interviewerMode, setInterviewerMode] =
-    useState<InterviewerMode>("neutral");
+    useState<InterviewerMode>('neutral');
   const [focus, setFocus] = useState<Focus>(null);
   const [persona, setPersona] = useState<(typeof personas)[number]>(
     personas[0],
   );
   const [questionPlan, setQuestionPlan] = useState<
-    "glasno" | "custom" | "mixed" | "free"
-  >("mixed");
-  const [customQuestions, setCustomQuestions] = useState("");
-  const [questionsFileName, setQuestionsFileName] = useState("");
-  const [questionsFileText, setQuestionsFileText] = useState("");
-  const [resumeFileName, setResumeFileName] = useState("");
-  const [resumeExtractedText, setResumeExtractedText] = useState("");
+    'glasno' | 'custom' | 'mixed' | 'free'
+  >('mixed');
+  const [customQuestions, setCustomQuestions] = useState('');
+  const [questionsFileName, setQuestionsFileName] = useState('');
+  const [questionsFileText, setQuestionsFileText] = useState('');
+  const [resumeFileName, setResumeFileName] = useState('');
+  const [resumeExtractedText, setResumeExtractedText] = useState('');
   const [preparing, setPreparing] = useState(false);
   const [createSession, createState] = useCreateSessionMutation();
   const [extractQuestions, extractQuestionsState] =
@@ -129,7 +129,7 @@ export function NewInterviewPage() {
     const options = query
       ? PROFESSIONAL_ROLE_OPTIONS.filter((item) =>
           [item.name, item.categoryName, ...(item.aliases ?? [])]
-            .join(" ")
+            .join(' ')
             .toLocaleLowerCase()
             .includes(query),
         )
@@ -158,8 +158,8 @@ export function NewInterviewPage() {
       }
     }
 
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [isRoleListOpen]);
 
   function toggleTag(tag: string) {
@@ -175,62 +175,62 @@ export function NewInterviewPage() {
     setSelectedTags((current) =>
       current.includes(next) ? current : [...current, next],
     );
-    setCustomTag("");
+    setCustomTag('');
   }
 
   async function handleResumeFile(file: File | undefined) {
     if (!file) return;
     setResumeFileName(file.name);
-    setResumeExtractedText("");
+    setResumeExtractedText('');
     try {
       const result = await extractResume(file).unwrap();
       setResumeFileName(result.fileName || file.name);
       setResumeExtractedText(result.text.slice(0, 15_000));
     } catch (error) {
-      setResumeFileName("");
-      form.setError("root", { message: getApiErrorMessage(error) });
+      setResumeFileName('');
+      form.setError('root', { message: getApiErrorMessage(error) });
     } finally {
-      if (resumeInputRef.current) resumeInputRef.current.value = "";
+      if (resumeInputRef.current) resumeInputRef.current.value = '';
     }
   }
 
   function clearResumeFile() {
-    setResumeFileName("");
-    setResumeExtractedText("");
-    if (resumeInputRef.current) resumeInputRef.current.value = "";
+    setResumeFileName('');
+    setResumeExtractedText('');
+    if (resumeInputRef.current) resumeInputRef.current.value = '';
   }
 
   async function handleQuestionsFile(file: File | undefined) {
     if (!file) return;
     setQuestionsFileName(file.name);
-    setQuestionsFileText("");
+    setQuestionsFileText('');
     try {
       const result = await extractQuestions(file).unwrap();
       const text = result.text.trim();
       setQuestionsFileName(result.fileName || file.name);
       setQuestionsFileText(text);
       setCustomQuestions((current) =>
-        [current.trim(), text].filter(Boolean).join("\n\n"),
+        [current.trim(), text].filter(Boolean).join('\n\n'),
       );
     } catch (error) {
-      setQuestionsFileName("");
-      form.setError("root", { message: getApiErrorMessage(error) });
+      setQuestionsFileName('');
+      form.setError('root', { message: getApiErrorMessage(error) });
     } finally {
-      if (questionsInputRef.current) questionsInputRef.current.value = "";
+      if (questionsInputRef.current) questionsInputRef.current.value = '';
     }
   }
 
   async function create(data: SessionDraft) {
     const source =
-      sourceMode === "hh_url"
-        ? { type: "hh_url" as const, url: data.vacancy.trim() }
+      sourceMode === 'hh_url'
+        ? { type: 'hh_url' as const, url: data.vacancy.trim() }
         : role.trim()
           ? {
-              type: "profession" as const,
+              type: 'profession' as const,
               role: role.trim(),
-              specialization: selectedTags.join(", ") || undefined,
+              specialization: selectedTags.join(', ') || undefined,
             }
-          : { type: "text" as const, text: data.vacancy.trim() };
+          : { type: 'text' as const, text: data.vacancy.trim() };
     const request: AdvancedSessionCreationRequest = {
       trainingMode,
       source,
@@ -238,23 +238,23 @@ export function NewInterviewPage() {
         [
           resumeExtractedText.trim()
             ? `Резюме из файла «${resumeFileName}»:\n${resumeExtractedText.trim()}`
-            : "",
+            : '',
           data.profile.trim()
             ? `Дополнительно от кандидата:\n${data.profile.trim()}`
-            : "",
+            : '',
         ]
           .filter(Boolean)
-          .join("\n\n")
+          .join('\n\n')
           .slice(0, 15_000) || undefined,
       level: data.level,
       sessionGoal: goal,
       focus: focus ?? undefined,
       interviewerMode,
       customQuestionsText:
-        questionPlan === "custom" || questionPlan === "mixed"
+        questionPlan === 'custom' || questionPlan === 'mixed'
           ? customQuestions.trim() || undefined
           : undefined,
-      candidatePersona: trainingMode === "interviewer" ? persona : undefined,
+      candidatePersona: trainingMode === 'interviewer' ? persona : undefined,
       questionSourceMode: questionPlan,
     };
     setPreparing(true);
@@ -263,25 +263,25 @@ export function NewInterviewPage() {
       dispatch(clearDraft());
       navigate(`/interview/${session.id}`);
     } catch (error) {
-      form.setError("root", { message: getApiErrorMessage(error) });
+      form.setError('root', { message: getApiErrorMessage(error) });
       setPreparing(false);
     }
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     if (
-      sourceMode === "manual" &&
+      sourceMode === 'manual' &&
       role.trim() &&
-      form.getValues("vacancy").trim().length < 10
+      form.getValues('vacancy').trim().length < 10
     ) {
-      form.setValue("vacancy", role.trim(), { shouldDirty: true });
+      form.setValue('vacancy', role.trim(), { shouldDirty: true });
     }
     void form.handleSubmit(create)(event);
   }
 
   return (
     <form className="interview-page" noValidate onSubmit={submit}>
-      <section className="setup-shell glass-frame">
+      <section className="setup-shell glass-frame" style={{ zIndex: 1 }}>
         <header className="setup-context-head">
           <div>
             <p className="panel-label">КОНТЕКСТ ПОДГОТОВКИ</p>
@@ -293,15 +293,15 @@ export function NewInterviewPage() {
             role="radiogroup"
           >
             <Choice
-              active={trainingMode === "candidate"}
+              active={trainingMode === 'candidate'}
               description="Ответы"
-              onClick={() => setTrainingMode("candidate")}
+              onClick={() => setTrainingMode('candidate')}
               title="Я прохожу интервью"
             />
             <Choice
-              active={trainingMode === "interviewer"}
+              active={trainingMode === 'interviewer'}
               description="Вопросы"
-              onClick={() => setTrainingMode("interviewer")}
+              onClick={() => setTrainingMode('interviewer')}
               title="Я провожу интервью"
             />
           </div>
@@ -312,21 +312,21 @@ export function NewInterviewPage() {
             <h2>На какое собеседование готовимся?</h2>
             <div className="source-tabs" role="tablist">
               <Tab
-                active={sourceMode === "hh_url"}
+                active={sourceMode === 'hh_url'}
                 ariaLabel="По ссылке"
                 icon={<Link2 />}
-                onClick={() => setSourceMode("hh_url")}
+                onClick={() => setSourceMode('hh_url')}
                 title="Ссылка"
               />
               <Tab
-                active={sourceMode === "manual"}
+                active={sourceMode === 'manual'}
                 ariaLabel="Вручную"
                 icon={<BriefcaseBusiness />}
-                onClick={() => setSourceMode("manual")}
+                onClick={() => setSourceMode('manual')}
                 title="Опишу словами"
               />
             </div>
-            {sourceMode === "hh_url" ? (
+            {sourceMode === 'hh_url' ? (
               <Field
                 error={form.formState.errors.vacancy?.message}
                 label="Ссылка на вакансию"
@@ -334,7 +334,7 @@ export function NewInterviewPage() {
                 <input
                   inputMode="url"
                   placeholder="https://hh.ru/vacancy/123456"
-                  {...form.register("vacancy")}
+                  {...form.register('vacancy')}
                 />
               </Field>
             ) : (
@@ -408,15 +408,15 @@ export function NewInterviewPage() {
                           aria-pressed={selectedTags.includes(tag)}
                           className={
                             selectedTags.includes(tag)
-                              ? "context-tag context-tag--active"
-                              : "context-tag"
+                              ? 'context-tag context-tag--active'
+                              : 'context-tag'
                           }
                           key={tag}
                           onClick={() => toggleTag(tag)}
                           type="button"
                         >
                           {tag}
-                          {selectedTags.includes(tag) && " ×"}
+                          {selectedTags.includes(tag) && ' ×'}
                         </button>
                       ))}
                     </div>
@@ -425,7 +425,7 @@ export function NewInterviewPage() {
                         aria-label="Свой контекст"
                         onChange={(event) => setCustomTag(event.target.value)}
                         onKeyDown={(event) => {
-                          if (event.key === "Enter") {
+                          if (event.key === 'Enter') {
                             event.preventDefault();
                             addCustomTag();
                           }
@@ -449,7 +449,7 @@ export function NewInterviewPage() {
                 >
                   <textarea
                     placeholder="Задачи, требования, стек, формат работы. Можно вставить весь текст вакансии."
-                    {...form.register("vacancy")}
+                    {...form.register('vacancy')}
                   />
                 </Field>
               </>
@@ -458,16 +458,16 @@ export function NewInterviewPage() {
           <article className="context-column context-column--candidate">
             <p className="panel-label">ВАШ ОПЫТ</p>
             <h2>
-              {trainingMode === "candidate"
-                ? "Резюме или опыт"
-                : "Портрет кандидата"}
+              {trainingMode === 'candidate'
+                ? 'Резюме или опыт'
+                : 'Портрет кандидата'}
             </h2>
             <p className="source-hint">
-              {trainingMode === "candidate"
-                ? "Необязательно. Без резюме вопросы будут более общими."
-                : "Загрузите реальное резюме или опишите кандидата. Так тренировка будет ближе к настоящему интервью."}
+              {trainingMode === 'candidate'
+                ? 'Необязательно. Без резюме вопросы будут более общими.'
+                : 'Загрузите реальное резюме или опишите кандидата. Так тренировка будет ближе к настоящему интервью.'}
             </p>
-            {trainingMode === "interviewer" && (
+            {trainingMode === 'interviewer' && (
               <OptionGroup
                 ariaLabel="Поведение кандидата"
                 options={personas.map((title) => ({ value: title, title }))}
@@ -490,7 +490,7 @@ export function NewInterviewPage() {
               />
               <label className="file-button" htmlFor="resume-file">
                 <FileText aria-hidden="true" />
-                <span>{resumeFileName || "Выберите файл"}</span>
+                <span>{resumeFileName || 'Выберите файл'}</span>
               </label>
             </div>
             {(extractResumeState.isLoading || resumeExtractedText) && (
@@ -503,7 +503,7 @@ export function NewInterviewPage() {
                   <div className="resume-preview__actions">
                     <small>
                       {extractResumeState.isLoading
-                        ? "Извлекаем текст…"
+                        ? 'Извлекаем текст…'
                         : `${resumeExtractedText.length} символов`}
                     </small>
                     <button
@@ -545,22 +545,22 @@ export function NewInterviewPage() {
             <Field
               error={form.formState.errors.profile?.message}
               label={
-                trainingMode === "candidate"
-                  ? "Коротко о себе"
-                  : "Что учесть в поведении"
+                trainingMode === 'candidate'
+                  ? 'Коротко о себе'
+                  : 'Что учесть в поведении'
               }
             >
               <VoiceTextarea
                 aria-label={
-                  trainingMode === "candidate"
-                    ? "Коротко о себе"
-                    : "Что учесть в поведении"
+                  trainingMode === 'candidate'
+                    ? 'Коротко о себе'
+                    : 'Что учесть в поведении'
                 }
                 onValueChange={(profile) =>
-                  form.setValue("profile", profile, { shouldDirty: true })
+                  form.setValue('profile', profile, { shouldDirty: true })
                 }
                 placeholder="Например: 5 лет в B2B-продажах, вёл команду из 6 человек, запускал новое направление."
-                value={values.profile ?? ""}
+                value={values.profile ?? ''}
               />
             </Field>
           </article>
@@ -579,9 +579,9 @@ export function NewInterviewPage() {
           <OptionGroup
             ariaLabel="Уровень"
             options={levels}
-            value={values.level ?? "middle"}
+            value={values.level ?? 'middle'}
             onChange={(level) =>
-              form.setValue("level", level, { shouldDirty: true })
+              form.setValue('level', level, { shouldDirty: true })
             }
           />
           <OptionGroup
@@ -601,23 +601,23 @@ export function NewInterviewPage() {
               <h3>Свои вопросы</h3>
             </div>
             <div className="custom-questions-content">
-              {trainingMode === "interviewer" && (
+              {trainingMode === 'interviewer' && (
                 <div
                   aria-label="Источник вопросов"
                   className="interviewer-scenario-grid"
                   role="radiogroup"
                 >
                   {[
-                    { value: "mixed", title: "Смешанный план" },
-                    { value: "custom", title: "Мой план" },
-                    { value: "free", title: "Свободное интервью" },
+                    { value: 'mixed', title: 'Смешанный план' },
+                    { value: 'custom', title: 'Мой план' },
+                    { value: 'free', title: 'Свободное интервью' },
                   ].map((option) => (
                     <button
                       aria-checked={questionPlan === option.value}
                       className={
                         questionPlan === option.value
-                          ? "option-card option-card--active"
-                          : "option-card"
+                          ? 'option-card option-card--active'
+                          : 'option-card'
                       }
                       key={option.value}
                       onClick={() =>
@@ -631,7 +631,7 @@ export function NewInterviewPage() {
                   ))}
                 </div>
               )}
-              {questionPlan !== "free" && (
+              {questionPlan !== 'free' && (
                 <div className="custom-questions-grid">
                   <Field label="Что хотите потренировать">
                     <VoiceTextarea
@@ -639,7 +639,7 @@ export function NewInterviewPage() {
                       className="compact-voice-textarea"
                       onValueChange={setCustomQuestions}
                       placeholder={
-                        "Например:\nРасскажите про конфликт со стейкхолдером\nКак объяснить проваленный проект?\nСпроси про зарплатные ожидания"
+                        'Например:\nРасскажите про конфликт со стейкхолдером\nКак объяснить проваленный проект?\nСпроси про зарплатные ожидания'
                       }
                       value={customQuestions}
                     />
@@ -660,16 +660,16 @@ export function NewInterviewPage() {
                       />
                       <label className="file-button" htmlFor="questions-file">
                         <Upload aria-hidden="true" size={16} />
-                        <span>{questionsFileName || "Добавить файл"}</span>
+                        <span>{questionsFileName || 'Добавить файл'}</span>
                       </label>
                     </div>
-                    {trainingMode === "candidate" && (
+                    {trainingMode === 'candidate' && (
                       <label className="toggle-option">
                         <input
-                          checked={questionPlan === "custom"}
+                          checked={questionPlan === 'custom'}
                           onChange={(event) =>
                             setQuestionPlan(
-                              event.target.checked ? "custom" : "mixed",
+                              event.target.checked ? 'custom' : 'mixed',
                             )
                           }
                           type="checkbox"
@@ -702,20 +702,20 @@ export function NewInterviewPage() {
             <p>Сценарий готовится по выбранным параметрам</p>
             <div className="summary-chips">
               <span>
-                {goal === "quick"
-                  ? "Быстро"
-                  : goal === "deep"
-                    ? "Глубоко"
-                    : "Стандарт"}
+                {goal === 'quick'
+                  ? 'Быстро'
+                  : goal === 'deep'
+                    ? 'Глубоко'
+                    : 'Стандарт'}
               </span>
-              <span>{values.level ?? "middle"}</span>
+              <span>{values.level ?? 'middle'}</span>
               <span>{focuses.find((item) => item.value === focus)?.title}</span>
             </div>
           </div>
           <button disabled={createState.isLoading} type="submit">
-            {trainingMode === "candidate"
-              ? "Начать интервью"
-              : "Начать тренировку"}{" "}
+            {trainingMode === 'candidate'
+              ? 'Начать интервью'
+              : 'Начать тренировку'}{' '}
             <Sparkles aria-hidden="true" />
           </button>
         </footer>
@@ -775,7 +775,7 @@ function Choice({
   return (
     <button
       aria-checked={active}
-      className={active ? "mode-button mode-button--active" : "mode-button"}
+      className={active ? 'mode-button mode-button--active' : 'mode-button'}
       onClick={onClick}
       role="radio"
       type="button"
@@ -802,7 +802,7 @@ function Tab({
     <button
       aria-label={ariaLabel}
       aria-selected={active}
-      className={active ? "source-tab source-tab--active" : "source-tab"}
+      className={active ? 'source-tab source-tab--active' : 'source-tab'}
       onClick={onClick}
       role="tab"
       type="button"
@@ -833,8 +833,8 @@ function OptionGroup<T extends string | null>({
             aria-label={option.title}
             className={
               value === option.value
-                ? "option-card option-card--active"
-                : "option-card"
+                ? 'option-card option-card--active'
+                : 'option-card'
             }
             key={option.title}
             onClick={() => onChange(option.value)}

@@ -9,6 +9,8 @@ import {
 import { selectSessionsByStatus } from "@/entities/session/model/selectors";
 import { getApiErrorMessage } from "@/shared/api/baseApi";
 
+import "./HistoryPage.css";
+
 const filters: Array<{ value: SessionStatusFilter; label: string }> = [
   { value: "all", label: "Все" },
   { value: "active", label: "Активные" },
@@ -34,7 +36,19 @@ export function HistoryPage() {
   }
 
   if (isLoading) {
-    return <p role="status">Загрузка истории сессий…</p>;
+    return (
+      <section
+        aria-busy="true"
+        aria-label="Загрузка истории сессий"
+        className="history-page"
+        role="status"
+      >
+        <span className="sr-only">Загрузка истории сессий…</span>
+        <span className="history-skeleton" />
+        <span className="history-skeleton" />
+        <span className="history-skeleton" />
+      </section>
+    );
   }
 
   if (isError) {
@@ -42,21 +56,17 @@ export function HistoryPage() {
   }
 
   return (
-    <section className="max-w-4xl space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Практика</p>
-        <h1 className="text-4xl font-semibold tracking-tight">История сессий</h1>
-        <p className="text-muted-foreground">
-          Возвращайтесь к завершённым и активным сессиям.
-        </p>
+    <section className="history-page">
+      <header className="history-page__head">
+        <p className="panel-label">История</p>
+        <h1>История сессий</h1>
+        <p>Возвращайтесь к завершённым и активным сессиям.</p>
       </header>
 
-      <div className="max-w-xs space-y-2">
-        <label className="text-sm font-medium" htmlFor="session-status">
-          Статус
-        </label>
+      <div className="history-filter">
+        <label htmlFor="session-status">Статус</label>
         <select
-          className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+          className="history-filter__select"
           id="session-status"
           onChange={(event) => handleFilterChange(event.target.value)}
           value={status}
@@ -70,26 +80,36 @@ export function HistoryPage() {
       </div>
 
       {sessions.length ? (
-        <ul className="space-y-3" aria-label="Список сессий">
+        <ul className="history-list glass-frame" aria-label="Список сессий">
           {sessions.map((session) => (
-            <li key={session.id} className="rounded-lg border border-border bg-card p-5">
-              <p className="font-semibold">{session.title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {session.status === "completed" ? "Завершена" : "Активна"}
-              </p>
+            <li key={session.id}>
+              <Link
+                aria-label={`Открыть сессию ${session.title}`}
+                className="history-row"
+                to={`/interview/${session.id}`}
+              >
+                <span>
+                  <strong>{session.title}</strong>
+                  <small>
+                    {session.status === "completed"
+                      ? "Завершена"
+                      : "В процессе"}
+                  </small>
+                </span>
+                <b>
+                  {session.status === "completed"
+                    ? "Открыть разбор"
+                    : "Продолжить"}
+                </b>
+              </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <section className="rounded-lg border border-dashed border-border bg-card p-6">
-          <h2 className="text-lg font-semibold">{getEmptyMessage(status)}</h2>
-          <p className="mt-2 text-muted-foreground">
-            Новая практика появится здесь после запуска сессии.
-          </p>
-          <Link
-            className="mt-5 inline-flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-            to="/interview/new"
-          >
+        <section className="history-empty glass-frame">
+          <h2>{getEmptyMessage(status)}</h2>
+          <p>Новая практика появится здесь после запуска сессии.</p>
+          <Link className="primary-action" to="/interview/new">
             Начать сессию
           </Link>
         </section>

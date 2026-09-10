@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getApiErrorMessage, normalizeApiBaseUrl } from "./baseApi";
+import {
+  getApiErrorMessage,
+  normalizeApiBaseUrl,
+  resolveSameOriginApiUrl,
+} from "./baseApi";
 
 describe("normalizeApiBaseUrl", () => {
   it("приводит относительный адрес API к текущему origin", () => {
@@ -16,6 +20,12 @@ describe("normalizeApiBaseUrl", () => {
         "http://localhost:5173",
       ),
     ).toBe("https://api.example.test/interview");
+  });
+
+  it("строит auth-маршрут без префикса interview", () => {
+    expect(
+      resolveSameOriginApiUrl("auth/email/start", "http://localhost:5173"),
+    ).toBe("http://localhost:5173/api/auth/email/start");
   });
 
   it("извлекает сообщение из ошибки RTK Query", () => {

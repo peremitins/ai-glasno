@@ -22,9 +22,9 @@ describe("App", () => {
       "href",
       "/",
     );
-    expect(screen.getByRole("link", { name: "Войти" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Профиль" })).toHaveAttribute(
       "href",
-      "/auth",
+      "/profile",
     );
     expect(
       screen.getByRole("button", { name: "Свернуть боковую панель" }),

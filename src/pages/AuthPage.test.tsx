@@ -38,6 +38,16 @@ function renderAuthPage(initialEntry = "/auth") {
 }
 
 describe("AuthPage", () => {
+  it("изолирует поле e-mail от глобальных стилей полей", () => {
+    renderAuthPage();
+
+    const emailInput = screen.getByLabelText("E-mail");
+
+    expect(emailInput).toHaveClass("auth-email-input");
+    expect(emailInput.closest(".auth-input-shell")).toBeInTheDocument();
+    expect(emailInput.closest(".input-shell")).toBeNull();
+  });
+
   it("показывает ошибку для некорректного e-mail", async () => {
     const user = userEvent.setup();
 

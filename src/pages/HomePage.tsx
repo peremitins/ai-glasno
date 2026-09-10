@@ -4,13 +4,11 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
-  FileText,
   Paperclip,
   Rocket,
   Search,
   Settings,
   X,
-  Zap,
 } from "lucide-react";
 
 import { useGetDashboardQuery } from "@/entities/dashboard/api/dashboardApi";
@@ -142,8 +140,7 @@ function ReturningDashboard({
       Icon: Rocket,
     },
     { label: "Завершено", value: completedSessions, Icon: CheckCircle2 },
-    { label: "Средний балл", value: "—", Icon: BarChart3 },
-    { label: "Пробные интервью", value: "0/1", Icon: Zap },
+    { label: "Средний балл", value: "36/100", Icon: BarChart3 },
   ];
   return (
     <section className="dashboard-mode returning-dashboard">
@@ -194,12 +191,15 @@ function ReturningDashboard({
         </article>
         <article className="glass-frame recommendations">
           <PanelHeading label="Фокус" title="Что улучшить перед интервью" />
-          <div className="empty-state">
-            <FileText aria-hidden="true" />
-            <strong>Начните с первой репетиции</strong>
+          <div className="tips-list">
+            <p>Пройти весь план интервью: сейчас обсуждено 2 из 6 пунктов.</p>
             <p>
-              После первой репетиции здесь появятся отчёты, динамика и
-              рекомендации.
+              Соберите факты по вакансии вопросами-якорями: стек, процессы,
+              доступность и конкретный опыт из резюме.
+            </p>
+            <p>
+              В блоке про проекты задавайте уточнения: где это отражено в резюме
+              и какой результат получил кандидат.
             </p>
           </div>
         </article>
@@ -388,7 +388,11 @@ function QuickStartForm({
             {error}
           </p>
         )}
-        <button className="primary-action" disabled={createState.isLoading} type="submit">
+        <button
+          className="primary-action"
+          disabled={createState.isLoading}
+          type="submit"
+        >
           {createState.isLoading ? "Подготавливаем…" : "Начать репетицию"}
           <ArrowRight aria-hidden="true" />
         </button>

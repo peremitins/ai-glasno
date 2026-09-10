@@ -1,0 +1,118 @@
+.history-page {
+  display: grid;
+  gap: 16px;
+  max-width: 1180px;
+}
+.history-page__head {
+  display: grid;
+  gap: 8px;
+}
+.history-page__head h1,
+.history-empty h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1;
+}
+.history-page__head > p:last-child,
+.history-empty p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.history-filter {
+  display: grid;
+  gap: 7px;
+  max-width: 280px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
+}
+.history-filter__select {
+  min-height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  padding: 0 12px;
+}
+.history-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: clamp(14px, 2vw, 22px);
+  list-style: none;
+}
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  padding: 16px;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+.history-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--focus-ring);
+  background: var(--surface-raised);
+}
+.history-row > span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.history-row strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-row small {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.history-row b {
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.history-empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: clamp(20px, 3vw, 32px);
+}
+.history-skeleton {
+  display: block;
+  height: 88px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    100deg,
+    var(--surface-soft),
+    var(--surface-raised),
+    var(--surface-soft)
+  );
+  animation: dashboard-pulse 1.5s ease-in-out infinite;
+}
+@media (max-width: 720px) {
+  .history-row {
+    grid-template-columns: 1fr;
+  }
+  .history-row strong {
+    white-space: normal;
+  }
+  .history-row b {
+    justify-self: start;
+  }
+}
