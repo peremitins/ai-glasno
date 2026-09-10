@@ -20,7 +20,7 @@ import "./AppShell.css";
 
 const navigation = [
   { to: "/", label: "Главная", Icon: House, end: true },
-  { to: "/interview/new", label: "Новая репетиция", Icon: CirclePlus },
+  { to: "/interview/new", label: "Новое интервью", Icon: CirclePlus },
   { to: "/history", label: "История", Icon: Clock3 },
 ];
 
@@ -192,7 +192,7 @@ export function AppShell() {
         <header className="app-topbar glass-frame glass-frame--soft">
           <div>
             <p>Гласно</p>
-            <span>Практика для уверенных ответов</span>
+            <span>Репетиция собеседования по вашей вакансии</span>
           </div>
           <div className="app-topbar-actions">
             <button

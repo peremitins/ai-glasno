@@ -4,8 +4,10 @@ import { normalizeInterviewWorkspace } from "./interviewTransport";
 
 import {
   type AppendDialogueRequest,
+  interviewHistorySchema,
   interviewSessionSchema,
   interviewSessionsSchema,
+  type InterviewHistoryItem,
   type InterviewSession,
   type InterviewWorkspace,
   type NextQuestionRequest,
@@ -26,6 +28,21 @@ export const sessionApi = baseApi.injectEndpoints({
         interviewSessionsSchema.parse(response),
       transformErrorResponse: toApiError,
       providesTags: ["Session"],
+    }),
+    getHistorySessions: builder.query<InterviewHistoryItem[], void>({
+      query: () => "sessions/history",
+      transformResponse: (response: unknown) =>
+        interviewHistorySchema.parse(response).items,
+      transformErrorResponse: toApiError,
+      providesTags: ["Session"],
+    }),
+    deleteHistorySession: builder.mutation<void, string>({
+      query: (sessionId) => ({
+        url: `sessions/${sessionId}`,
+        method: "DELETE",
+      }),
+      transformErrorResponse: toApiError,
+      invalidatesTags: ["Session", "Dashboard"],
     }),
     createSession: builder.mutation<InterviewSession, SessionCreationRequest>({
       query: (draft) => ({
@@ -144,10 +161,12 @@ export const {
   useCompleteSessionMutation,
   useAppendDialogueMutation,
   useCreateSessionMutation,
+  useDeleteHistorySessionMutation,
   useExtractQuestionsMutation,
   useExtractResumeMutation,
   useExchangeRealtimeSdpMutation,
   useGetInterviewWorkspaceQuery,
+  useGetHistorySessionsQuery,
   useGetSessionsQuery,
   useNextQuestionMutation,
   useSaveAnswerMutation,

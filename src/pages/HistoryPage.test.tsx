@@ -2,7 +2,7 @@ import { Provider } from "react-redux";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
-import { MemoryRouter, useLocation } from "react-router";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { createAppStore } from "@/app/store";
@@ -11,18 +11,38 @@ import { server } from "@/test/server";
 
 import { HistoryPage } from "./HistoryPage";
 
-function LocationProbe() {
-  const location = useLocation();
+const historyResponse = {
+  items: [
+    {
+      id: "session_01",
+      title: "Frontend разработчик Senior",
+      subtitle: "Dev Company 23",
+      status: "running",
+      trainingMode: "candidate",
+      createdAt: "2026-09-09T10:59:00.000Z",
+      answeredQuestions: 4,
+      totalQuestions: 6,
+      report: null,
+    },
+    {
+      id: "session_02",
+      title: "Senior Frontend Developer (Vue.js / Nuxt.js)",
+      subtitle: "Selecty",
+      status: "completed",
+      trainingMode: "interviewer",
+      createdAt: "2026-07-22T11:49:00.000Z",
+      answeredQuestions: 6,
+      totalQuestions: 6,
+      report: { id: "report_02", overallScore: 9 },
+    },
+  ],
+};
 
-  return <output data-testid="location">{location.search}</output>;
-}
-
-function renderHistoryPage(entry = "/history") {
+function renderHistoryPage() {
   return render(
     <Provider store={createAppStore()}>
-      <MemoryRouter initialEntries={[entry]}>
+      <MemoryRouter>
         <HistoryPage />
-        <LocationProbe />
       </MemoryRouter>
     </Provider>,
   );
@@ -31,10 +51,10 @@ function renderHistoryPage(entry = "/history") {
 describe("HistoryPage", () => {
   it("показывает загрузку истории", () => {
     server.use(
-      http.get(`${API_BASE_URL}/sessions`, async () => {
+      http.get(`${API_BASE_URL}/sessions/history`, async () => {
         await delay("infinite");
 
-        return HttpResponse.json([]);
+        return HttpResponse.json({ items: [] });
       }),
     );
 
@@ -43,71 +63,53 @@ describe("HistoryPage", () => {
     expect(screen.getByText("Загрузка истории сессий…")).toBeInTheDocument();
   });
 
-  it("меняет URL при выборе фильтра статуса", async () => {
-    const user = userEvent.setup();
+  it("показывает карточки сессий как в истории эталона", async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/sessions/history`, () =>
+        HttpResponse.json(historyResponse),
+      ),
+    );
+
     renderHistoryPage();
 
-    await user.selectOptions(
-      await screen.findByLabelText("Статус"),
-      "completed",
-    );
-
-    expect(screen.getByTestId("location")).toHaveTextContent(
-      "?status=completed",
-    );
-  });
-
-  it("показывает только завершённые сессии для фильтра completed", async () => {
-    server.use(
-      http.get(`${API_BASE_URL}/sessions`, () =>
-        HttpResponse.json([
-          {
-            id: "session_01",
-            title: "Практика TypeScript",
-            status: "completed",
-            completedAt: "2026-09-01T10:00:00.000Z",
-          },
-          {
-            id: "session_02",
-            title: "Практика React",
-            status: "active",
-            completedAt: null,
-          },
-        ]),
-      ),
-    );
-
-    renderHistoryPage("/history?status=completed");
-
-    expect(await screen.findByText("Практика TypeScript")).toBeInTheDocument();
-    expect(screen.queryByText("Практика React")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Открыть сессию Практика TypeScript/ }),
-    ).toHaveAttribute("href", "/interview/session_01");
-  });
-
-  it("показывает пустое состояние для фильтра без сессий", async () => {
-    server.use(
-      http.get(`${API_BASE_URL}/sessions`, () =>
-        HttpResponse.json([
-          {
-            id: "session_01",
-            title: "Frontend-разработчик",
-            status: "completed",
-            completedAt: "2026-09-01T10:00:00.000Z",
-          },
-        ]),
-      ),
-    );
-
-    renderHistoryPage("/history?status=active");
-
-    expect(
-      await screen.findByText("Активных сессий пока нет."),
+      await screen.findByRole("heading", {
+        name: "Frontend разработчик Senior",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Начать сессию" })).toHaveAttribute(
-      "href",
-      "/interview/new",
+    expect(screen.getByText("В процессе")).toBeInTheDocument();
+    expect(screen.getByText("Вы — кандидат")).toBeInTheDocument();
+    expect(screen.getByText("4 из 6")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Продолжить" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Завершено")).toBeInTheDocument();
+    expect(screen.getByText("Вы — интервьюер")).toBeInTheDocument();
+    expect(screen.getByText("9/100")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Открыть отчёт" }),
+    ).toBeInTheDocument();
+  });
+
+  it("открывает подтверждение перед удалением", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API_BASE_URL}/sessions/history`, () =>
+        HttpResponse.json(historyResponse),
+      ),
     );
+
+    renderHistoryPage();
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Удалить сессию Frontend разработчик Senior",
+      }),
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "Удалить сессию?" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Отмена" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
