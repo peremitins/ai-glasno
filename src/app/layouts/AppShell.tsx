@@ -14,13 +14,13 @@ import {
   CircleHelp,
   UserRound,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 
 import "./AppShell.css";
 
 const navigation = [
   { to: "/", label: "Главная", Icon: House, end: true },
-  { to: "/interview/new", label: "Новая репетиция", Icon: CirclePlus },
+  { to: "/interview/new", label: "Новое интервью", Icon: CirclePlus },
   { to: "/history", label: "История", Icon: Clock3 },
 ];
 
@@ -143,10 +143,13 @@ export function AppShell() {
             />
             <span className="app-nav-label">Тарифы</span>
           </NavLink>
-          <NavLink className={getNavigationClassName} to="/interview/new">
+          <Link
+            className="app-nav-item"
+            to="/pricing?checkout=gift&plan=pass_30d"
+          >
             <Gift aria-hidden="true" className="app-nav-icon" />
             <span className="app-nav-label">Подарить</span>
-          </NavLink>
+          </Link>
           <button
             aria-label="Поделиться"
             className="app-nav-item"
@@ -192,7 +195,7 @@ export function AppShell() {
         <header className="app-topbar glass-frame glass-frame--soft">
           <div>
             <p>Гласно</p>
-            <span>Практика для уверенных ответов</span>
+            <span>Репетиция собеседования по вашей вакансии</span>
           </div>
           <div className="app-topbar-actions">
             <button

@@ -62,7 +62,7 @@
   --accent: #7c5cff;
   --accent-2: #1195f4;
   --danger: #ff6b7a;
-  --app-bg: #ff0000;
+  --app-bg: #070a18;
   --surface: rgb(16 20 43 / 58%);
   --surface-soft: rgb(255 255 255 / 7.5%);
   --surface-raised: rgb(255 255 255 / 13%);
@@ -115,7 +115,7 @@
 }
 
 html[data-theme="light"] {
-  --app-bg: #ff0000;
+  --app-bg: #f4f7ff;
   --surface: rgb(255 255 255 / 62%);
   --surface-soft: rgb(255 255 255 / 58%);
   --surface-raised: rgb(255 255 255 / 82%);

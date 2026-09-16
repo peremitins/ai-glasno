@@ -15,6 +15,30 @@ export const interviewSessionsSchema = z.array(interviewSessionSchema);
 
 export type InterviewSession = z.infer<typeof interviewSessionSchema>;
 
+export const interviewHistoryItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  subtitle: z.string().nullable().optional(),
+  status: z.enum(["running", "completed"]),
+  trainingMode: z.enum(["candidate", "interviewer"]),
+  createdAt: z.string(),
+  answeredQuestions: z.number().int().nonnegative(),
+  totalQuestions: z.number().int().nonnegative(),
+  report: z
+    .object({
+      id: z.string(),
+      overallScore: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export const interviewHistorySchema = z.object({
+  items: z.array(interviewHistoryItemSchema),
+});
+
+export type InterviewHistoryItem = z.infer<typeof interviewHistoryItemSchema>;
+
 export const interviewHintPackSchema = z.object({
   bullets: z.array(z.string()).default([]),
   focus: z.string().nullable().optional(),

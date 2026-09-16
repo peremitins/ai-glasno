@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/shared/api/baseApi";
 
 import type { DashboardOverview } from "@/entities/dashboard/model/types";
 import type {
+  InterviewHistoryItem,
   InterviewWorkspace,
   SessionCreationRequest,
   SessionDraft,
@@ -34,6 +35,33 @@ const dashboard: DashboardOverview = {
 
 const initialSessions = [...dashboard.recentSessions];
 let sessions = [...initialSessions];
+
+const initialHistorySessions: InterviewHistoryItem[] = [
+  {
+    id: "session_01",
+    title: "Frontend разработчик Senior",
+    subtitle: "Dev Company 23",
+    status: "running",
+    trainingMode: "candidate",
+    createdAt: "2026-09-09T10:59:00.000Z",
+    answeredQuestions: 4,
+    totalQuestions: 6,
+    report: null,
+  },
+  {
+    id: "session_02",
+    title: "Senior Frontend Developer (Vue.js / Nuxt.js)",
+    subtitle: "Selecty",
+    status: "completed",
+    trainingMode: "interviewer",
+    createdAt: "2026-07-22T11:49:00.000Z",
+    answeredQuestions: 6,
+    totalQuestions: 6,
+    report: { id: "report_02", overallScore: 9 },
+  },
+];
+
+let historySessions = structuredClone(initialHistorySessions);
 
 const initialWorkspace: InterviewWorkspace = {
   session: initialSessions[0],
@@ -98,6 +126,7 @@ let user = initialUser;
 export function resetMockData() {
   user = initialUser;
   sessions = [...initialSessions];
+  historySessions = structuredClone(initialHistorySessions);
   workspace = structuredClone(initialWorkspace);
 }
 
@@ -134,7 +163,26 @@ export const handlers = [
     });
   }),
   http.get(`${API_BASE_URL}/dashboard`, () => HttpResponse.json(dashboard)),
+  http.get(`${API_BASE_URL}/sessions/history`, () =>
+    HttpResponse.json({ items: historySessions }),
+  ),
   http.get(`${API_BASE_URL}/sessions`, () => HttpResponse.json(sessions)),
+  http.delete(`${API_BASE_URL}/sessions/:sessionId`, ({ params }) => {
+    const sessionId = String(params.sessionId);
+    const exists = historySessions.some((session) => session.id === sessionId);
+
+    if (!exists) {
+      return HttpResponse.json(
+        { code: "session_not_found", message: "Сессия не найдена." },
+        { status: 404 },
+      );
+    }
+
+    historySessions = historySessions.filter(
+      (session) => session.id !== sessionId,
+    );
+    return new HttpResponse(null, { status: 204 });
+  }),
   http.post(`${API_BASE_URL}/sessions`, async ({ request }) => {
     const body = (await request.json()) as Partial<SessionCreationRequest>;
     const vacancy =

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { API_BASE_URL } from "@/shared/api/baseApi";
+import { readCsrfHeader } from "@/shared/api/csrf";
 
 import {
   interviewWorkspaceSchema,
@@ -30,7 +31,9 @@ const sourceStateSchema = z.object({
     vacancyTitle: z.string().nullable().optional(),
     role: z.string().nullable().optional(),
     totalQuestions: z.number().int().positive(),
-    plan: z.array(z.object({ id: z.string(), question: z.string() })).default([]),
+    plan: z
+      .array(z.object({ id: z.string(), question: z.string() }))
+      .default([]),
   }),
   currentTurn: sourceTurnSchema.nullable(),
   turns: z.array(sourceTurnSchema).default([]),
@@ -92,7 +95,10 @@ export function normalizeInterviewWorkspace(
     totalQuestions: session.totalQuestions,
     plan: session.plan.length
       ? session.plan
-      : sourceState.turns.map((turn) => ({ id: turn.id, question: turn.question })),
+      : sourceState.turns.map((turn) => ({
+          id: turn.id,
+          question: turn.question,
+        })),
     currentTurn: currentTurn
       ? {
           id: currentTurn.id,
@@ -110,18 +116,6 @@ export function normalizeInterviewWorkspace(
         }
       : null,
   });
-}
-
-function readCsrfHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-
-  const token = document.cookie
-    .split(";")
-    .map((value) => value.trim())
-    .find((value) => value.startsWith("glasno_csrf="))
-    ?.slice("glasno_csrf=".length);
-
-  return token ? { "x-csrf-token": decodeURIComponent(token) } : {};
 }
 
 function getStreamUrl(sessionId: string) {

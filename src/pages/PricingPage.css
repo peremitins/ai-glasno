@@ -1,0 +1,220 @@
+.pricing-page,
+.pricing-pass,
+.pricing-packs-section,
+.pricing-pack,
+.pricing-status {
+  display: grid;
+  gap: 16px;
+}
+.pricing-status {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: clamp(16px, 2vw, 26px);
+}
+.pricing-status h1,
+.pricing-pass h2,
+.pricing-packs-header h2,
+.pricing-pack h3,
+.pricing-dialog h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+.pricing-status p,
+.pricing-pass header > p:last-child,
+.pricing-packs-header p,
+.pricing-pack > p,
+.pricing-actions p,
+.pricing-dialog p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.pricing-status__hint {
+  align-self: center;
+}
+.pricing-pass {
+  padding: clamp(16px, 2vw, 26px);
+}
+.pricing-pass header {
+  display: grid;
+  gap: 6px;
+}
+.pricing-durations {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.pricing-duration {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 68px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pricing-duration--selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-soft));
+  color: var(--text-primary);
+}
+.pricing-duration strong {
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+.pricing-duration span {
+  font-size: 11px;
+}
+.pricing-duration em,
+.pricing-badge {
+  position: absolute;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+.pricing-duration em {
+  top: -9px;
+}
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.pricing-price strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 26px;
+}
+.pricing-price span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.pricing-features {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+}
+.pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.pricing-features svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: var(--accent-2);
+}
+.pricing-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pricing-actions p {
+  grid-column: 1/-1;
+  text-align: center;
+  font-size: 12px;
+}
+.primary-action,
+.secondary-action {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+.primary-action {
+  background: var(--button-bg);
+  box-shadow: var(--button-shadow);
+  color: var(--button-text);
+}
+.secondary-action {
+  border-color: var(--glass-border);
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+.pricing-packs-header {
+  padding: 16px;
+}
+.pricing-packs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.pricing-pack {
+  position: relative;
+  padding: 20px;
+}
+.pricing-pack .primary-action {
+  margin-top: auto;
+}
+.pricing-badge {
+  top: 14px;
+  right: 14px;
+}
+.pricing-dialog-backdrop {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(3 5 14 / 68%);
+}
+.pricing-dialog {
+  position: relative;
+  width: min(100%, 460px);
+  padding: 24px;
+}
+.pricing-dialog > strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 25px;
+}
+.pricing-dialog__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+}
+.pricing-dialog__close svg {
+  width: 16px;
+}
+@media (max-width: 900px) {
+  .pricing-status {
+    grid-template-columns: 1fr;
+  }
+  .pricing-durations {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .pricing-packs {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .pricing-actions {
+    grid-template-columns: 1fr;
+  }
+  .pricing-actions p {
+    grid-column: auto;
+  }
+}

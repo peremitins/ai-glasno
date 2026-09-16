@@ -4,6 +4,8 @@ import {
   type FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
 
+import { appendCsrfHeader } from "./csrf";
+
 export type ApiError = {
   code: string;
   message: string;
@@ -94,6 +96,7 @@ export const baseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
     credentials: "include",
+    prepareHeaders: appendCsrfHeader,
   }),
   tagTypes,
   endpoints: () => ({}),
