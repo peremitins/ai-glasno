@@ -28,6 +28,17 @@ dist-ssr
 secrets/
 credentials/
 
+# Локальные материалы AI-инструментов не входят в публичный репозиторий.
+AGENTS.md
+CLAUDE.md
+CLOUD.md
+cloud.md
+.agents/
+.claude/
+.codex/
+.serena/
+.mcp.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
