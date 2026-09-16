@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { getDb, schema } from "./client";
 
@@ -134,11 +134,34 @@ export class InterviewRepository {
   }
 
   async deleteSession(sessionId: string) {
-    await this.database
-      .delete(schema.interviewTurns)
-      .where(eq(schema.interviewTurns.sessionId, sessionId));
-    await this.database
-      .delete(schema.interviewSessions)
-      .where(eq(schema.interviewSessions.id, sessionId));
+    await this.database.transaction(async (tx) => {
+      await tx.execute(sql`
+        UPDATE ${sql.identifier("realtime_minute_debits")}
+        SET ${sql.identifier("realtime_session_id")} = NULL
+        WHERE ${sql.identifier("realtime_session_id")} IN (
+          SELECT ${sql.identifier("id")}
+          FROM ${sql.identifier("realtime_voice_sessions")}
+          WHERE ${sql.identifier("interview_session_id")} = ${sessionId}
+        )
+      `);
+      await tx.execute(sql`
+        DELETE FROM ${sql.identifier("realtime_voice_sessions")}
+        WHERE ${sql.identifier("interview_session_id")} = ${sessionId}
+      `);
+      await tx.execute(sql`
+        DELETE FROM ${sql.identifier("ai_usage")}
+        WHERE ${sql.identifier("interview_session_id")} = ${sessionId}
+      `);
+      await tx.execute(sql`
+        DELETE FROM ${sql.identifier("interview_reports")}
+        WHERE ${sql.identifier("session_id")} = ${sessionId}
+      `);
+      await tx
+        .delete(schema.interviewTurns)
+        .where(eq(schema.interviewTurns.sessionId, sessionId));
+      await tx
+        .delete(schema.interviewSessions)
+        .where(eq(schema.interviewSessions.id, sessionId));
+    });
   }
 }
