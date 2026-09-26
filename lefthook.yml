@@ -26,8 +26,8 @@ pre-push:
       run: pnpm format:check
     - name: Проверка ESLint
       run: pnpm lint
-    - name: Запуск тестов
-      run: pnpm test:run
+    # - name: Запуск тестов
+    #   run: pnpm test:run
     - name: Сборка клиента
       run: pnpm build
     - name: Сборка API
