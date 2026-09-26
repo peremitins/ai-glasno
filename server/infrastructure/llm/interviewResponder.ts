@@ -99,7 +99,11 @@ export class InterviewResponder {
         },
       ],
     };
-    const request = buildRequest(config.server.aiRelay, payload, config.server.openAi.apiKey);
+    const request = buildRequest(
+      config.server.aiRelay,
+      payload,
+      config.server.openAi.apiKey,
+    );
     const response = await fetch(request.url, {
       method: "POST",
       headers: request.headers,
@@ -138,7 +142,12 @@ export class InterviewResponder {
 }
 
 function buildRequest(
-  relay: { authSecret: string; clientId: string; enabled: boolean; url: string },
+  relay: {
+    authSecret: string;
+    clientId: string;
+    enabled: boolean;
+    url: string;
+  },
   payload: Record<string, unknown>,
   apiKey: string,
 ) {

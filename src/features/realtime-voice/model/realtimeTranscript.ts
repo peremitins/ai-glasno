@@ -17,12 +17,11 @@ export function getCompletedRealtimeTranscript(
   const payload = event as Record<string, unknown>;
   const role =
     typeof payload.type === "string"
-      ? transcriptEventRoles[
-          payload.type as keyof typeof transcriptEventRoles
-        ]
+      ? transcriptEventRoles[payload.type as keyof typeof transcriptEventRoles]
       : undefined;
   const id = typeof payload.item_id === "string" ? payload.item_id : "";
-  const text = typeof payload.transcript === "string" ? payload.transcript.trim() : "";
+  const text =
+    typeof payload.transcript === "string" ? payload.transcript.trim() : "";
 
   return role && id && text ? { id, role, text } : null;
 }

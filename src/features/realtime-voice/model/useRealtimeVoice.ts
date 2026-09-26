@@ -113,7 +113,8 @@ export function useRealtimeVoice({
         },
         onEvent(event) {
           const transcript = getCompletedRealtimeTranscript(event);
-          if (!transcript || persistedMessagesRef.current.has(transcript.id)) return;
+          if (!transcript || persistedMessagesRef.current.has(transcript.id))
+            return;
           const activeTurnId = turnIdRef.current;
           if (!activeTurnId) return;
           persistedMessagesRef.current.add(transcript.id);

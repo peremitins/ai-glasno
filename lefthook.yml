@@ -1,0 +1,18 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: Проверка форматирования
+      glob:
+        - "*.{css,html,json,js,jsx,md,mjs,cjs,scss,ts,tsx,yaml,yml}"
+        - "**/*.{css,html,json,js,jsx,md,mjs,cjs,scss,ts,tsx,yaml,yml}"
+      run: pnpm exec prettier --check -- {staged_files}
+    - name: Проверка ESLint
+      glob:
+        - "*.{js,jsx,mjs,cjs,ts,tsx}"
+        - "**/*.{js,jsx,mjs,cjs,ts,tsx}"
+      run: pnpm exec eslint -- {staged_files}
+
+pre-push:
+  jobs:
+    - name: Полный набор проверок
+      run: pnpm format:check && pnpm lint && pnpm test:run && pnpm build && pnpm build:api

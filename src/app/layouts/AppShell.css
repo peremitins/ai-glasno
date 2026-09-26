@@ -14,7 +14,7 @@
   width: min(54vw, 760px);
   height: min(54vw, 760px);
   border-radius: 50%;
-  content: '';
+  content: "";
   filter: blur(18px);
   pointer-events: none;
 }
