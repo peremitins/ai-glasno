@@ -6,14 +6,15 @@ output:
   - execution_out
 
 pre-commit:
-  parallel: true
+  parallel: false
   jobs:
-    - name: Проверка форматирования
+    - name: Форматирование staged-файлов
       glob:
         - "*.{css,html,json,js,jsx,md,mjs,cjs,scss,ts,tsx,yaml,yml}"
         - "**/*.{css,html,json,js,jsx,md,mjs,cjs,scss,ts,tsx,yaml,yml}"
-      run: pnpm exec prettier --check -- {staged_files}
-    - name: Проверка ESLint
+      run: pnpm exec prettier --write --no-error-on-unmatched-pattern -- {staged_files}
+      stage_fixed: true
+    - name: Проверка ESLint staged-файлов
       glob:
         - "*.{js,jsx,mjs,cjs,ts,tsx}"
         - "**/*.{js,jsx,mjs,cjs,ts,tsx}"
