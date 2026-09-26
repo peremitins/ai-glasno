@@ -6,8 +6,9 @@ export type BrowserCapabilities = {
 };
 
 export function getBrowserCapabilities(
-  browser: Window | undefined =
-    typeof window === "undefined" ? undefined : window,
+  browser: Window | undefined = typeof window === "undefined"
+    ? undefined
+    : window,
 ): BrowserCapabilities {
   const mediaDevices = browser?.navigator?.mediaDevices;
   const speechBrowser = browser as

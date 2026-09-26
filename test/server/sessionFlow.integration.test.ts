@@ -34,6 +34,12 @@ const repository = vi.hoisted(() => {
   };
 });
 
+vi.mock("../../server/config/runtimeConfig", () => ({
+  getRuntimeConfig: () => ({
+    server: { sessionSecret: "integration-test-session-key" },
+  }),
+}));
+
 vi.mock("../../server/infrastructure/db/interviewRepository", () => ({
   InterviewRepository: class {
     createSession = repository.createSession;

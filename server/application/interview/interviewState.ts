@@ -70,8 +70,19 @@ export function toInterviewState(session: SessionRecord, turns: TurnRecord[]) {
       role: session.role,
       totalQuestions: session.questionCount,
       plan: Array.isArray(readRecord(readRecord(session.metadata).plan).items)
-        ? (readRecord(readRecord(session.metadata).plan).items as Array<Record<string, unknown>>).flatMap((item) =>
-            typeof item.question === "string" ? [{ id: String(item.id ?? item.question), question: item.question }] : [],
+        ? (
+            readRecord(readRecord(session.metadata).plan).items as Array<
+              Record<string, unknown>
+            >
+          ).flatMap((item) =>
+            typeof item.question === "string"
+              ? [
+                  {
+                    id: String(item.id ?? item.question),
+                    question: item.question,
+                  },
+                ]
+              : [],
           )
         : [],
     },

@@ -16,8 +16,8 @@ vi.mock("./client", async (importOriginal) => {
 describe("InterviewRepository.deleteSession", () => {
   it("удаляет зависимые записи в одной транзакции до сессии", async () => {
     const statements: string[] = [];
-    const transaction = vi.fn(async <T>(callback: (tx: typeof tx) => Promise<T>) =>
-      callback(tx),
+    const transaction = vi.fn(
+      async <T>(callback: (tx: typeof tx) => Promise<T>) => callback(tx),
     );
     const tx = {
       execute: async (query: Parameters<PgDialect["sqlToQuery"]>[0]) => {
@@ -44,10 +44,10 @@ describe("InterviewRepository.deleteSession", () => {
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(statements).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("UPDATE \"realtime_minute_debits\""),
-        expect.stringContaining("DELETE FROM \"realtime_voice_sessions\""),
-        expect.stringContaining("DELETE FROM \"ai_usage\""),
-        expect.stringContaining("DELETE FROM \"interview_reports\""),
+        expect.stringContaining('UPDATE "realtime_minute_debits"'),
+        expect.stringContaining('DELETE FROM "realtime_voice_sessions"'),
+        expect.stringContaining('DELETE FROM "ai_usage"'),
+        expect.stringContaining('DELETE FROM "interview_reports"'),
         "DELETE interview_turns",
         "DELETE interview_sessions",
       ]),

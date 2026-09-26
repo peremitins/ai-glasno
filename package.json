@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",
-    "preview:api": "nitro preview"
+    "preview:api": "nitro preview",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -63,6 +64,7 @@
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
+    "lefthook": "2.1.14",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",
