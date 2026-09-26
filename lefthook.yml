@@ -1,5 +1,9 @@
 colors: false
-output: false
+output:
+  - summary
+  - success
+  - failure
+  - execution_out
 
 pre-commit:
   parallel: true
@@ -17,5 +21,13 @@ pre-commit:
 
 pre-push:
   jobs:
-    - name: Полный набор проверок
-      run: pnpm format:check && pnpm lint && pnpm test:run && pnpm build && pnpm build:api
+    - name: Проверка форматирования
+      run: pnpm format:check
+    - name: Проверка ESLint
+      run: pnpm lint
+    - name: Запуск тестов
+      run: pnpm test:run
+    - name: Сборка клиента
+      run: pnpm build
+    - name: Сборка API
+      run: pnpm build:api
