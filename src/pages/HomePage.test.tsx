@@ -1,5 +1,5 @@
 import { Provider } from "react-redux";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
@@ -191,8 +191,10 @@ describe("HomePage", () => {
     );
     await user.click(screen.getByRole("button", { name: "Начать репетицию" }));
 
-    expect(await screen.findByTestId("location")).toHaveTextContent(
-      "/interview/session_03",
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent(
+        "/interview/session_03",
+      );
+    });
   });
 });
